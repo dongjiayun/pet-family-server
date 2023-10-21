@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"go-pet-family/models"
 	"go-pet-family/utils"
+	"gorm.io/gorm"
 )
 
 func GetUsers(c *gin.Context) {
@@ -17,25 +18,25 @@ func GetUsers(c *gin.Context) {
 	pageNo := pagination.PageNo
 	pageSize := pagination.PageSize
 	var users models.Users
-	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Find(&users)
+	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Where("is_deleted = 0").Find(&users)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	c.JSON(0, models.Result{200, "success", models.GetSafeUsers(users)})
+	c.JSON(0, models.Result{0, "success", models.GetSafeUsers(users)})
 }
 
 func GetUser(c *gin.Context) {
 	cid := c.Param("cid")
 	var user models.User
-	db := models.DB.Where("cid = ?", cid).Find(&user)
+	db := models.DB.Where("cid = ?", cid).Where("is_deleted = 0").Find(&user)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	c.JSON(0, models.Result{200, "success", models.GetSafeUser(user)})
+	c.JSON(0, models.Result{0, "success", models.GetSafeUser(user)})
 }
 
 func CreateUser(c *gin.Context) {
@@ -48,14 +49,14 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 	if user.Email != "" {
-		emailExist := checkEmailExists(user.Email)
+		emailExist := checkEmailExists(user.Email, "")
 		if emailExist {
 			c.JSON(200, models.Result{Code: 10002, Message: "邮箱已存在"})
 			return
 		}
 	}
 	if user.Phone != "" {
-		phoneExist := checkPhoneExists(user.Phone)
+		phoneExist := checkPhoneExists(user.Phone, "")
 		if phoneExist {
 			c.JSON(200, models.Result{Code: 10002, Message: "手机号已存在"})
 			return
@@ -72,17 +73,78 @@ func CreateUser(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	c.JSON(0, models.Result{Code: 200, Message: "success", Data: models.GetSafeUser(user)})
+	c.JSON(0, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(user)})
 }
 
-func checkEmailExists(email string) bool {
+func UpdateUser(c *gin.Context) {
+	cid := c.Param("cid")
+	var user models.UpdateUserFields
+	var oldUser models.User
+	getUser := models.DB.Where("cid = ?", cid).First(&oldUser)
+	if getUser.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	err := c.ShouldBindJSON(&user)
+	if err != nil {
+		// 显示自定义的错误信息
+		msg := utils.GetValidMsg(err, &user)
+		c.JSON(200, models.Result{Code: 10001, Message: msg})
+		return
+	}
+	if user.Email != "" {
+		emailExist := checkEmailExists(user.Email, oldUser.Email)
+		if emailExist {
+			c.JSON(200, models.Result{Code: 10002, Message: "邮箱已存在"})
+			return
+		}
+	}
+	if user.Phone != "" {
+		phoneExist := checkPhoneExists(user.Phone, oldUser.Phone)
+		if phoneExist {
+			c.JSON(200, models.Result{Code: 10002, Message: "手机号已存在"})
+			return
+		}
+	}
+	db := models.DB.Model(&oldUser).Where("cid = ?", cid).Updates(&user)
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	resultUser := models.User{
+		Cid:      oldUser.Cid,
+		Email:    user.Email,
+		Phone:    user.Phone,
+		Avatar:   user.Avatar,
+		Age:      user.Age,
+		Username: user.Username,
+		Gender:   user.Gender,
+		Birthday: user.Birthday,
+		Role:     user.Role,
+	}
+	c.JSON(0, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(resultUser)})
+}
+
+func checkEmailExists(email string, exceptedEmail string) bool {
 	var user models.User
-	db := models.DB.Where("email = ?", email).First(&user)
+	var db *gorm.DB
+	if exceptedEmail != "" {
+		db = models.DB.Where("email != ?", exceptedEmail).Where("email = ?", email).First(&user)
+	} else {
+		db = models.DB.Where("email = ?", email).First(&user)
+	}
 	return db.Error == nil
 }
 
-func checkPhoneExists(phone string) bool {
+func checkPhoneExists(phone string, exceptedPhone string) bool {
 	var user models.User
-	db := models.DB.Where("phone = ?", phone).First(&user)
+	var db *gorm.DB
+	if exceptedPhone != "" {
+		db = models.DB.Where("phone != ?", exceptedPhone).Where("phone = ?", phone).First(&user)
+	} else {
+		db = models.DB.Where("phone = ?", phone).First(&user)
+	}
 	return db.Error == nil
 }

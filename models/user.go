@@ -9,7 +9,7 @@ type User struct {
 	Password   string `json:"-"`
 	Email      string `json:"email" binding:"email" msg:"请输入正确的邮箱地址" gorm:"index"`
 	Phone      string `json:"phone" binding:"phone" msg:"请输入正确的手机号" gorm:"index"`
-	Cid        string `json:"cid"`
+	Cid        string `json:"cid" gorm:"index"`
 	IsDeleted  bool   `json:"-"`
 	Id         int    `json:"-" gorm:"primary_key"`
 	Gender     string `json:"gender"`
@@ -75,4 +75,15 @@ func GetSafeUsers(users []User) []SafeUser {
 	}
 
 	return safeUsers
+}
+
+type UpdateUserFields struct {
+	Username string `json:"username"`
+	Email    string `json:"email" binding:"email" msg:"请输入正确的邮箱地址" gorm:"index"`
+	Phone    string `json:"phone" binding:"phone" msg:"请输入正确的手机号" gorm:"index"`
+	Gender   string `json:"gender"`
+	Birthday string `json:"birthday"`
+	Avatar   string `json:"avatar"`
+	Age      int    `json:"age"`
+	Role     string `json:"role"`
 }

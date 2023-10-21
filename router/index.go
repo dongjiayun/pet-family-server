@@ -19,6 +19,8 @@ func getUserApi(router *gin.Engine) {
 	r.GET("", controllers.GetUsers)
 
 	r.GET(":cid", controllers.GetUser)
+
+	r.PUT(":cid", controllers.UpdateUser)
 }
 
 func GetRouter() *gin.Engine {
