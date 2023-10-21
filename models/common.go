@@ -6,9 +6,9 @@ type Pagination struct {
 }
 
 type Result struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Code    int    `json:"code"`
+	Message string `json:"msg"`
+	Data    any    `json:"data"`
 }
 
 func maskPhoneNumber(phone string) string {
