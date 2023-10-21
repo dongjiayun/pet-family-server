@@ -21,6 +21,10 @@ func getUserApi(router *gin.Engine) {
 	r.GET(":cid", controllers.GetUser)
 
 	r.PUT(":cid", controllers.UpdateUser)
+
+	r.DELETE(":cid", controllers.DeleteUser)
+
+	r.DELETE("/delete/:cid", controllers.DeleteUserData)
 }
 
 func GetRouter() *gin.Engine {

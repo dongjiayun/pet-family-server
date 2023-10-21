@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go-pet-family/models"
@@ -24,7 +25,7 @@ func GetUsers(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	c.JSON(0, models.Result{0, "success", models.GetSafeUsers(users)})
+	c.JSON(200, models.Result{0, "success", models.GetSafeUsers(users)})
 }
 
 func GetUser(c *gin.Context) {
@@ -36,7 +37,7 @@ func GetUser(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	c.JSON(0, models.Result{0, "success", models.GetSafeUser(user)})
+	c.JSON(200, models.Result{0, "success", models.GetSafeUser(user)})
 }
 
 func CreateUser(c *gin.Context) {
@@ -73,7 +74,7 @@ func CreateUser(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	c.JSON(0, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(user)})
+	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(user)})
 }
 
 func UpdateUser(c *gin.Context) {
@@ -124,7 +125,30 @@ func UpdateUser(c *gin.Context) {
 		Birthday: user.Birthday,
 		Role:     user.Role,
 	}
-	c.JSON(0, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(resultUser)})
+	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(resultUser)})
+}
+
+func DeleteUser(c *gin.Context) {
+	cid := c.Param("cid")
+	fmt.Println(cid)
+	db := models.DB.Model(&models.User{}).Where("cid = ?", cid).Update("is_deleted", 1)
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	c.JSON(200, models.Result{Code: 0, Message: "success"})
+}
+
+func DeleteUserData(c *gin.Context) {
+	cid := c.Param("cid")
+	db := models.DB.Model(&models.User{}).Delete(&models.User{}, "cid = ?", cid)
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	c.JSON(200, models.Result{Code: 0, Message: "success"})
 }
 
 func checkEmailExists(email string, exceptedEmail string) bool {
