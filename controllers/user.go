@@ -64,7 +64,7 @@ func CreateUser(c *gin.Context) {
 
 	newUUID := uuid.New()
 	uuidSring := newUUID.String()
-	user.Cid = "C_" + uuidSring
+	user.Cid = "C-" + uuidSring
 
 	db := models.DB.Create(&user)
 	if db.Error != nil {
