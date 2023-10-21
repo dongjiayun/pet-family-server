@@ -18,7 +18,7 @@ type User struct {
 	Age        int    `json:"age"`
 	CreateTime string `json:"-"`
 	UpdateTime string `json:"-"`
-	Role       string `json:"-"`
+	Role       string `json:"role"`
 }
 
 type Users []User
@@ -36,7 +36,7 @@ type SafeUser struct {
 	Birthday string `json:"birthday"`
 	Avatar   string `json:"avatar"`
 	Age      int    `json:"age"`
-	Role     string `json:"-"`
+	Role     string `json:"role"`
 }
 
 func GetSafeUser(user User) SafeUser {
