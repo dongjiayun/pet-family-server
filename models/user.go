@@ -32,6 +32,11 @@ type SafeUser struct {
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
 	Cid      string `json:"cid"`
+	Gender   string `json:"gender"`
+	Birthday string `json:"birthday"`
+	Avatar   string `json:"avatar"`
+	Age      int    `json:"age"`
+	Role     string `json:"-"`
 }
 
 func GetSafeUser(user User) SafeUser {
@@ -41,6 +46,11 @@ func GetSafeUser(user User) SafeUser {
 		Email:    user.Email,
 		Phone:    maskedPhone,
 		Cid:      user.Cid,
+		Gender:   user.Gender,
+		Birthday: user.Birthday,
+		Avatar:   user.Avatar,
+		Age:      user.Age,
+		Role:     user.Role,
 	}
 	return safeUser
 }
@@ -55,6 +65,11 @@ func GetSafeUsers(users []User) []SafeUser {
 			Email:    user.Email,
 			Phone:    maskPhoneNumber(user.Phone),
 			Cid:      user.Cid,
+			Gender:   user.Gender,
+			Birthday: user.Birthday,
+			Avatar:   user.Avatar,
+			Age:      user.Age,
+			Role:     user.Role,
 		}
 		safeUsers = append(safeUsers, safeUser)
 	}
