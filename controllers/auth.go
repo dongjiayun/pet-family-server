@@ -19,7 +19,7 @@ import (
 )
 
 type MyClaims struct {
-	Username string `json:"username"`
+	Cid string `json:"cid"`
 	jwt.StandardClaims
 }
 
@@ -97,7 +97,6 @@ func SignIn(c *gin.Context) {
 }
 
 func generateToken(c *gin.Context, account string, loginType string) {
-	token, _ := GenToken(account)
 	var resultUser models.User
 
 	if loginType == "email" {
@@ -107,6 +106,8 @@ func generateToken(c *gin.Context, account string, loginType string) {
 			c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		}
 	}
+
+	token, _ := GenToken(resultUser.Cid)
 
 	redisClient := models.RedisClient
 
@@ -217,10 +218,10 @@ func SignUp(c *gin.Context) {
 }
 
 // GenToken 生成JWT
-func GenToken(username string) (string, error) {
+func GenToken(Cid string) (string, error) {
 	// 创建一个我们自己的声明
 	c := MyClaims{
-		username, // 自定义字段
+		Cid, // 自定义字段
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(TokenExpireDuration).Unix(), // 过期时间
 			Issuer:    "pet-family",                               // 签发人
@@ -232,17 +233,38 @@ func GenToken(username string) (string, error) {
 	return token.SignedString(Secret)
 }
 
-// ParseToken 解析JWT
-func ParseToken(tokenString string) (*MyClaims, error) {
-	// 解析token
-	token, err := jwt.ParseWithClaims(tokenString, &MyClaims{}, func(token *jwt.Token) (i interface{}, err error) {
+type TokenClaims struct {
+	CID string
+}
+
+func CheckToken(c *gin.Context) (*TokenClaims, error) {
+	tokenString := c.GetHeader("Authorization")
+	_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return Secret, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	if claims, ok := token.Claims.(*MyClaims); ok && token.Valid { // 校验token
-		return claims, nil
+
+	token, err := jwt.ParseWithClaims(tokenString, &MyClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return Secret, nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("invalid token")
+
+	claims, ok := token.Claims.(*MyClaims)
+	if !ok || !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+
+	// 获取用户的CID（假设你的 MyClaims 结构体中有一个 CID 字段）
+	cid := claims.Cid
+
+	fmt.Println(claims)
+
+	// 返回 TokenClaims 结构体，包含 MyClaims 和 CID
+	return &TokenClaims{
+		CID: cid,
+	}, nil
 }

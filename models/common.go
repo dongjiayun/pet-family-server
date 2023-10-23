@@ -14,6 +14,9 @@ type Result struct {
 func maskPhoneNumber(phone string) string {
 	// 实现你的手机号掩码逻辑
 	// 这里的示例只保留前三位和后四位，其他位用*替代
+	if phone == "" {
+		return ""
+	}
 	masked := phone[:3] + "****" + phone[len(phone)-4:]
 	return masked
 }
