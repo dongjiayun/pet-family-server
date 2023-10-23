@@ -136,18 +136,22 @@ func generateToken(c *gin.Context, account string, loginType string) {
 
 	token, _ := GenToken(resultUser.Cid, loginType)
 
+	refreshToken, _ := GenRefreshToken(resultUser.Cid, loginType)
+
 	redisClient := models.RedisClient
 
 	redisClient.Del(context.Background(), account)
 
 	type Result struct {
 		models.User
-		Token string `json:"token"`
+		Token        string `json:"token"`
+		RefreshToken string `json:"refreshToken"`
 	}
 
 	result := Result{
-		User:  resultUser,
-		Token: token,
+		User:         resultUser,
+		Token:        token,
+		RefreshToken: refreshToken,
 	}
 
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: result})
@@ -243,6 +247,11 @@ type WastedToken struct {
 
 func SignOut(c *gin.Context) {
 	token := c.GetHeader("Authorization")
+	handleWasteToken(token)
+	c.JSON(200, models.Result{Code: 0, Message: "success"})
+}
+
+func handleWasteToken(token string) {
 	redisClient := models.RedisClient
 	blackList := redisClient.Get(context.Background(), "blackList")
 	blackListValue := blackList.Val()
@@ -263,11 +272,65 @@ func SignOut(c *gin.Context) {
 	_blackList = append(_blackList, wastedToken)
 	__blackList, _ := json.Marshal(_blackList)
 	redisClient.Set(context.Background(), "blackList", __blackList, 0)
-	c.JSON(200, models.Result{Code: 0, Message: "success"})
 }
 
 func SignUp(c *gin.Context) {
 
+}
+
+func RefreshToken(c *gin.Context) {
+	refreshToken, _ := CheckRefreshToken(c)
+	if refreshToken == nil {
+		c.JSON(200, models.Result{Code: 10001, Message: "无效的RefreshToken"})
+		return
+	}
+	cid := refreshToken.Cid
+	fmt.Println(cid)
+	loginType := refreshToken.LoginType
+	var user models.User
+	db := models.DB.Model(&models.User{}).Where("cid = ?", cid).First(&user)
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	generateToken(c, user.Email, loginType)
+}
+
+func CheckRefreshToken(c *gin.Context) (*TokenClaims, error) {
+	refreshToken := c.GetHeader("Refresh-Token")
+	if refreshToken == "" {
+		return nil, errors.New("无效的RefreshToken")
+	}
+
+	_, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
+		return Secret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := jwt.ParseWithClaims(refreshToken, &MyClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return Secret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*MyClaims)
+
+	cid := claims.Cid
+	loginType := claims.LoginType
+
+	fmt.Println(cid, loginType)
+
+	if !ok || !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+	return &TokenClaims{
+		Cid:       cid,
+		LoginType: loginType,
+	}, nil
 }
 
 // GenToken 生成JWT
@@ -287,8 +350,24 @@ func GenToken(Cid string, LoginType string) (string, error) {
 	return token.SignedString(Secret)
 }
 
+func GenRefreshToken(Cid string, LoginType string) (string, error) {
+	// 创建一个我们自己的声明
+	c := MyClaims{
+		Cid, // 自定义字段
+		LoginType,
+		jwt.StandardClaims{
+			Issuer: "pet-family", // 签发人
+		},
+	}
+	// 使用指定的签名方法创建签名对象
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
+	// 使用指定的secret签名并获得完整的编码后的字符串token
+	return token.SignedString(Secret)
+}
+
 type TokenClaims struct {
-	Cid string
+	Cid       string
+	LoginType string
 }
 
 func CheckToken(c *gin.Context) (*TokenClaims, error) {
@@ -348,8 +427,6 @@ func CheckToken(c *gin.Context) (*TokenClaims, error) {
 
 	// 获取用户的CID（假设你的 MyClaims 结构体中有一个 CID 字段）
 	cid := claims.Cid
-
-	fmt.Println(claims)
 
 	// 返回 TokenClaims 结构体，包含 MyClaims 和 CID
 	return &TokenClaims{

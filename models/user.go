@@ -89,12 +89,13 @@ type UpdateUserFields struct {
 }
 
 type AuthUser struct {
-	Phone     string `json:"phone"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	Otp       string `json:"otp"`
-	LoginType string `json:"loginType"`
-	Ticket    string `json:"ticket"`
+	Phone        string `json:"phone"`
+	Email        string `json:"email"`
+	Password     string `json:"password"`
+	Otp          string `json:"otp"`
+	LoginType    string `json:"loginType"`
+	Ticket       string `json:"ticket"`
+	RefreshToken string `json:"refreshToken"`
 }
 
 type AuthOtp struct {
