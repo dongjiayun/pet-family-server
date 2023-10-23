@@ -249,21 +249,20 @@ func SignOut(c *gin.Context) {
 	var _blackList []WastedToken
 	if blackListValue != "" {
 		redisClient.Set(context.Background(), "blackList", "", 0)
-	} else {
-		err := json.Unmarshal([]byte(blackListValue), &_blackList)
-		if err != nil {
-			// 处理解析错误
-			fmt.Println("解析JSON出错:", err)
-			// 返回错误或者其他逻辑处理
-		}
-		wastedToken := WastedToken{
-			Token:      token,
-			CreateTime: int(time.Now().Unix()),
-		}
-		_blackList = append(_blackList, wastedToken)
-		__blackList, _ := json.Marshal(_blackList)
-		redisClient.Set(context.Background(), "blackList", __blackList, 0)
 	}
+	err := json.Unmarshal([]byte(blackListValue), &_blackList)
+	if err != nil {
+		// 处理解析错误
+		fmt.Println("解析JSON出错:", err)
+		// 返回错误或者其他逻辑处理
+	}
+	wastedToken := WastedToken{
+		Token:      token,
+		CreateTime: int(time.Now().Unix()),
+	}
+	_blackList = append(_blackList, wastedToken)
+	__blackList, _ := json.Marshal(_blackList)
+	redisClient.Set(context.Background(), "blackList", __blackList, 0)
 	c.JSON(200, models.Result{Code: 0, Message: "success"})
 }
 
@@ -316,7 +315,8 @@ func CheckToken(c *gin.Context) (*TokenClaims, error) {
 				isWasted = true
 			}
 			nowTime := int(time.Now().Unix())
-			if nowTime < wasted.CreateTime {
+			expiredTime := int(time.Unix(int64(wasted.CreateTime), 0).Add(TokenExpireDuration).Unix())
+			if nowTime < expiredTime {
 				newBlackList = append(newBlackList, wasted)
 			}
 		}
