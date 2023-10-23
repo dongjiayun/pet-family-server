@@ -236,12 +236,17 @@ func SendEmailOtp(c *gin.Context) {
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: ticketString})
 }
 
+type WastedToken struct {
+	Token      string `json:"token"`
+	CreateTime int    `json:"create_time"`
+}
+
 func SignOut(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	redisClient := models.RedisClient
 	blackList := redisClient.Get(context.Background(), "blackList")
 	blackListValue := blackList.Val()
-	var _blackList []string
+	var _blackList []WastedToken
 	if blackListValue != "" {
 		redisClient.Set(context.Background(), "blackList", "", 0)
 	} else {
@@ -251,7 +256,11 @@ func SignOut(c *gin.Context) {
 			fmt.Println("解析JSON出错:", err)
 			// 返回错误或者其他逻辑处理
 		}
-		_blackList = append(_blackList, token)
+		wastedToken := WastedToken{
+			Token:      token,
+			CreateTime: int(time.Now().Unix()),
+		}
+		_blackList = append(_blackList, wastedToken)
 		__blackList, _ := json.Marshal(_blackList)
 		redisClient.Set(context.Background(), "blackList", __blackList, 0)
 	}
@@ -292,7 +301,7 @@ func CheckToken(c *gin.Context) (*TokenClaims, error) {
 	redisClient := models.RedisClient
 	blackList := redisClient.Get(context.Background(), "blackList")
 	blackListValue := blackList.Val()
-	var _blackList []string
+	var _blackList []WastedToken
 	if blackListValue != "" {
 		err := json.Unmarshal([]byte(blackListValue), &_blackList)
 		if err != nil {
@@ -300,7 +309,20 @@ func CheckToken(c *gin.Context) (*TokenClaims, error) {
 			fmt.Println("解析JSON出错:", err)
 			// 返回错误或者其他逻辑处理
 		}
-		if utils.ArrayIncludes(_blackList, tokenString) {
+		var isWasted bool
+		var newBlackList []WastedToken
+		for _, wasted := range _blackList {
+			if wasted.Token == tokenString {
+				isWasted = true
+			}
+			nowTime := int(time.Now().Unix())
+			if nowTime < wasted.CreateTime {
+				newBlackList = append(newBlackList, wasted)
+			}
+		}
+		__blackList, _ := json.Marshal(newBlackList)
+		redisClient.Set(context.Background(), "blackList", __blackList, 0)
+		if isWasted {
 			return nil, errors.New("token已失效")
 		}
 	}
