@@ -9,6 +9,8 @@ func getAuthApi(router *gin.Engine) {
 	r := router.Group("/auth")
 
 	r.POST("/login", controllers.SignIn)
+
+	r.POST("/sendEmailOtp", controllers.SendEmailOtp)
 }
 
 func getUserApi(router *gin.Engine) {
@@ -24,7 +26,7 @@ func getUserApi(router *gin.Engine) {
 
 	r.DELETE(":cid", controllers.DeleteUser)
 
-	r.DELETE("/delete/:cid", controllers.DeleteUserData)
+	r.DELETE("/delete/:cid", controllers.HardDeleteUser)
 }
 
 func GetRouter() *gin.Engine {

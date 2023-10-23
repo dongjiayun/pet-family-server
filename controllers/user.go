@@ -43,12 +43,18 @@ func GetUser(c *gin.Context) {
 func CreateUser(c *gin.Context) {
 	var user models.User
 	err := c.ShouldBindJSON(&user)
-	if err != nil {
+	if user.Email != "" && err != nil {
 		// 显示自定义的错误信息
 		msg := utils.GetValidMsg(err, &user)
 		c.JSON(200, models.Result{Code: 10001, Message: msg})
 		return
 	}
+
+	if user.Email == "" {
+		c.JSON(200, models.Result{Code: 10001, Message: "邮箱不能为空"})
+		return
+	}
+
 	if user.Email != "" {
 		emailExist := checkEmailExists(user.Email, "")
 		if emailExist {
@@ -75,6 +81,31 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(user)})
+}
+
+func CreateByEmail(ch chan string, c *gin.Context, email string) {
+	var user models.User
+	user.Email = email
+	if user.Email == "" {
+		c.JSON(200, models.Result{Code: 10001, Message: "邮箱不能为空"})
+		return
+	}
+	checkEmail := utils.CheckEmail(email)
+	if !checkEmail {
+		c.JSON(200, models.Result{Code: 10001, Message: "邮箱格式不正确"})
+	}
+
+	newUUID := uuid.New()
+	uuidSring := newUUID.String()
+	user.Cid = "C-" + uuidSring
+
+	db := models.DB.Create(&user)
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	ch <- "success"
 }
 
 func UpdateUser(c *gin.Context) {
@@ -140,7 +171,7 @@ func DeleteUser(c *gin.Context) {
 	c.JSON(200, models.Result{Code: 0, Message: "success"})
 }
 
-func DeleteUserData(c *gin.Context) {
+func HardDeleteUser(c *gin.Context) {
 	cid := c.Param("cid")
 	db := models.DB.Model(&models.User{}).Delete(&models.User{}, "cid = ?", cid)
 	if db.Error != nil {

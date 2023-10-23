@@ -87,3 +87,18 @@ type UpdateUserFields struct {
 	Age      int    `json:"age"`
 	Role     string `json:"role"`
 }
+
+type AuthUser struct {
+	Phone     string `json:"phone"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	Otp       string `json:"otp"`
+	LoginType string `json:"loginType"`
+	Ticket    string `json:"ticket"`
+}
+
+type AuthOtp struct {
+	Code    string `json:"code"`
+	Account string `json:"account"`
+	Ticket  string `json:"ticket"`
+}
