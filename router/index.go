@@ -3,7 +3,16 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"go-pet-family/controllers"
+	"go-pet-family/models"
 )
+
+func checkTokenMiddleware(c *gin.Context) {
+	checkToken, _ := controllers.CheckToken(c)
+	if checkToken == nil {
+		c.JSON(403, models.Result{Code: 10001, Message: "token is invalid"})
+		c.Abort()
+	}
+}
 
 func getAuthApi(router *gin.Engine) {
 	r := router.Group("/auth")
@@ -15,6 +24,8 @@ func getAuthApi(router *gin.Engine) {
 
 func getUserApi(router *gin.Engine) {
 	r := router.Group("/user")
+
+	r.Use(checkTokenMiddleware)
 
 	r.POST("", controllers.CreateUser)
 

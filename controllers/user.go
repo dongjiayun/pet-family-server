@@ -10,11 +10,6 @@ import (
 )
 
 func GetUsers(c *gin.Context) {
-	checkToken, _ := CheckToken(c)
-	if checkToken == nil {
-		c.JSON(403, models.Result{Code: 10001, Message: "token is invalid"})
-		return
-	}
 	var pagination models.Pagination
 	err := c.ShouldBindJSON(&pagination)
 	if err != nil {
