@@ -74,6 +74,8 @@ func CreateUser(c *gin.Context) {
 	uuidSring := newUUID.String()
 	user.Cid = "C-" + uuidSring
 
+	user.Password = "123456"
+
 	db := models.DB.Create(&user)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
@@ -98,6 +100,8 @@ func CreateByEmail(ch chan string, c *gin.Context, email string) {
 	newUUID := uuid.New()
 	uuidSring := newUUID.String()
 	user.Cid = "C-" + uuidSring
+
+	user.Password = "123456"
 
 	db := models.DB.Create(&user)
 	if db.Error != nil {

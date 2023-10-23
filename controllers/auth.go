@@ -88,6 +88,32 @@ func SignIn(c *gin.Context) {
 				return
 			}
 		}
+	case "emailWithPassword":
+		if user.Email == "" {
+			c.JSON(200, models.Result{Code: 10001, Message: "邮箱不能为空"})
+			return
+		}
+		if user.Password == "" {
+			c.JSON(200, models.Result{Code: 10001, Message: "密码不能为空"})
+			return
+		}
+		emailExist := checkEmailExists(user.Email, "")
+		if emailExist {
+			var resultUser models.User
+			db := models.DB.Model(&models.User{}).Where("email = ?", user.Email).First(&resultUser)
+			if db.Error != nil {
+				// SQL执行失败，返回错误信息
+				c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+				return
+			}
+			if resultUser.Password == user.Password {
+				generateToken(c, user.Email, "email")
+			} else {
+				c.JSON(200, models.Result{Code: 10001, Message: "密码错误"})
+			}
+		} else {
+			c.JSON(200, models.Result{Code: 10001, Message: "邮箱不存在"})
+		}
 	}
 
 	if user.Email == "" && user.Password == "" {
