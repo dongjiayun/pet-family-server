@@ -19,3 +19,11 @@ func BindJson(c *gin.Context, obj any) (err error) {
 	}
 	return nil
 }
+
+func ArrayIncludes(arr []string, target string) bool {
+	numSet := make(map[string]bool)
+	for _, num := range arr {
+		numSet[num] = true
+	}
+	return numSet[target]
+}

@@ -11,15 +11,19 @@ func checkTokenMiddleware(c *gin.Context) {
 	if checkToken == nil {
 		c.JSON(403, models.Result{Code: 10001, Message: "token is invalid"})
 		c.Abort()
+		return
 	}
+	c.Set("cid", checkToken.Cid)
 }
 
 func getAuthApi(router *gin.Engine) {
 	r := router.Group("/auth")
 
-	r.POST("/login", controllers.SignIn)
+	r.POST("/signIn", controllers.SignIn)
 
 	r.POST("/sendEmailOtp", controllers.SendEmailOtp)
+
+	r.Use(checkTokenMiddleware).POST("/signOut", controllers.SignOut)
 }
 
 func getUserApi(router *gin.Engine) {

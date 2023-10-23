@@ -19,7 +19,8 @@ import (
 )
 
 type MyClaims struct {
-	Cid string `json:"cid"`
+	Cid       string `json:"cid"`
+	LoginType string `json:"login_type"`
 	jwt.StandardClaims
 }
 
@@ -133,7 +134,7 @@ func generateToken(c *gin.Context, account string, loginType string) {
 		}
 	}
 
-	token, _ := GenToken(resultUser.Cid)
+	token, _ := GenToken(resultUser.Cid, loginType)
 
 	redisClient := models.RedisClient
 
@@ -236,7 +237,25 @@ func SendEmailOtp(c *gin.Context) {
 }
 
 func SignOut(c *gin.Context) {
-
+	token := c.GetHeader("Authorization")
+	redisClient := models.RedisClient
+	blackList := redisClient.Get(context.Background(), "blackList")
+	blackListValue := blackList.Val()
+	var _blackList []string
+	if blackListValue != "" {
+		redisClient.Set(context.Background(), "blackList", "", 0)
+	} else {
+		err := json.Unmarshal([]byte(blackListValue), &_blackList)
+		if err != nil {
+			// 处理解析错误
+			fmt.Println("解析JSON出错:", err)
+			// 返回错误或者其他逻辑处理
+		}
+		_blackList = append(_blackList, token)
+		__blackList, _ := json.Marshal(_blackList)
+		redisClient.Set(context.Background(), "blackList", __blackList, 0)
+	}
+	c.JSON(200, models.Result{Code: 0, Message: "success"})
 }
 
 func SignUp(c *gin.Context) {
@@ -244,10 +263,11 @@ func SignUp(c *gin.Context) {
 }
 
 // GenToken 生成JWT
-func GenToken(Cid string) (string, error) {
+func GenToken(Cid string, LoginType string) (string, error) {
 	// 创建一个我们自己的声明
 	c := MyClaims{
 		Cid, // 自定义字段
+		LoginType,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(TokenExpireDuration).Unix(), // 过期时间
 			Issuer:    "pet-family",                               // 签发人
@@ -260,11 +280,31 @@ func GenToken(Cid string) (string, error) {
 }
 
 type TokenClaims struct {
-	CID string
+	Cid string
 }
 
 func CheckToken(c *gin.Context) (*TokenClaims, error) {
 	tokenString := c.GetHeader("Authorization")
+	if tokenString == "" {
+		return nil, errors.New("无效的token")
+	}
+
+	redisClient := models.RedisClient
+	blackList := redisClient.Get(context.Background(), "blackList")
+	blackListValue := blackList.Val()
+	var _blackList []string
+	if blackListValue != "" {
+		err := json.Unmarshal([]byte(blackListValue), &_blackList)
+		if err != nil {
+			// 处理解析错误
+			fmt.Println("解析JSON出错:", err)
+			// 返回错误或者其他逻辑处理
+		}
+		if utils.ArrayIncludes(_blackList, tokenString) {
+			return nil, errors.New("token已失效")
+		}
+	}
+
 	_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return Secret, nil
 	})
@@ -291,6 +331,6 @@ func CheckToken(c *gin.Context) (*TokenClaims, error) {
 
 	// 返回 TokenClaims 结构体，包含 MyClaims 和 CID
 	return &TokenClaims{
-		CID: cid,
+		Cid: cid,
 	}, nil
 }
