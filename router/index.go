@@ -46,6 +46,14 @@ func getUserApi(router *gin.Engine) {
 	r.DELETE("/delete/:cid", controllers.HardDeleteUser)
 }
 
+func getArticleApi(router *gin.Engine) {
+	r := router.Group("/article")
+
+	r.GET("", controllers.GetArticles)
+
+	r.GET(":aid", controllers.GetArticle)
+}
+
 func GetRouter() *gin.Engine {
 	router := gin.Default()
 	getAuthApi(router)
