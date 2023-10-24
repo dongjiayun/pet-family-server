@@ -16,6 +16,17 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+	migErr := DB.AutoMigrate(
+		&Article{},
+		&Tag{},
+		&Comment{},
+		&File{},
+		&Location{},
+		&User{},
+	)
+	if migErr != nil {
+		panic(migErr)
+	}
 }
 
 var RedisClient *redis.Client

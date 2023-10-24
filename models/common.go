@@ -20,3 +20,31 @@ func maskPhoneNumber(phone string) string {
 	masked := phone[:3] + "****" + phone[len(phone)-4:]
 	return masked
 }
+
+type File struct {
+	Id         int    `json:"-" gorm:"primary_key"`
+	FileId     string `json:"file_id" gorm:"index"`
+	FileName   string `json:"file_name"`
+	FileUrl    string `json:"file_url"`
+	FileType   string `json:"file_type"`
+	FileSize   int    `json:"file_size"`
+	FileMd5    string `json:"file_md5"`
+	CreateTime string `json:"createTime"`
+	IsDeleted  bool   `json:"-"`
+}
+
+type Location struct {
+	Id         int    `json:"-" gorm:"primary_key"`
+	LocationId string `json:"location_id" gorm:"index"`
+	Country    string `json:"country"`
+	City       string `json:"city"`
+	Province   string `json:"province"`
+	Area       string `json:"area"`
+	Street     string `json:"street"`
+	StreetNum  string `json:"street_num"`
+	Longitude  string `json:"longitude"`
+	Latitude   string `json:"latitude"`
+	CreateTime string `json:"createTime"`
+	UpdateTime string `json:"updateTime"`
+	IsDeleted  bool   `json:"-"`
+}

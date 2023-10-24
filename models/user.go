@@ -1,9 +1,5 @@
 package models
 
-func init() {
-	DB.AutoMigrate(&User{})
-}
-
 type User struct {
 	Username   string `json:"username"`
 	Password   string `json:"-"`
@@ -14,7 +10,7 @@ type User struct {
 	Id         int    `json:"-" gorm:"primary_key"`
 	Gender     string `json:"gender"`
 	Birthday   string `json:"birthday"`
-	Avatar     string `json:"avatar"`
+	Avatar     File   `json:"avatar" gorm:"foreignKey:FileId;type:varchar(255)"`
 	Age        int    `json:"age"`
 	CreateTime string `json:"-"`
 	UpdateTime string `json:"-"`
@@ -34,7 +30,7 @@ type SafeUser struct {
 	Cid      string `json:"cid"`
 	Gender   string `json:"gender"`
 	Birthday string `json:"birthday"`
-	Avatar   string `json:"avatar"`
+	Avatar   File   `json:"avatar" gorm:"foreignKey:FileId;type:varchar(255)"`
 	Age      int    `json:"age"`
 	Role     string `json:"role"`
 }
@@ -83,7 +79,7 @@ type UpdateUserFields struct {
 	Phone    string `json:"phone" binding:"phone" msg:"请输入正确的手机号" gorm:"index"`
 	Gender   string `json:"gender"`
 	Birthday string `json:"birthday"`
-	Avatar   string `json:"avatar"`
+	Avatar   File   `json:"avatar" gorm:"foreignKey:FileId;type:varchar(255)"`
 	Age      int    `json:"age"`
 	Role     string `json:"role"`
 }
