@@ -1,20 +1,19 @@
 package models
 
 type User struct {
-	Username   string `json:"username"`
-	Password   string `json:"-"`
-	Email      string `json:"email" binding:"email" msg:"请输入正确的邮箱地址" gorm:"index"`
-	Phone      string `json:"phone" binding:"phone" msg:"请输入正确的手机号" gorm:"index"`
-	Cid        string `json:"cid" gorm:"index"`
-	IsDeleted  bool   `json:"-"`
-	Id         int    `json:"-" gorm:"primary_key"`
-	Gender     string `json:"gender"`
-	Birthday   string `json:"birthday"`
-	Avatar     File   `json:"avatar" gorm:"foreignKey:FileId;type:varchar(255)"`
-	Age        int    `json:"age"`
-	CreateTime string `json:"-"`
-	UpdateTime string `json:"-"`
-	Role       string `json:"role"`
+	Model
+	Username  string `json:"username"`
+	Password  string `json:"-"`
+	Email     string `json:"email" binding:"email" msg:"请输入正确的邮箱地址" gorm:"index"`
+	Phone     string `json:"phone" binding:"phone" msg:"请输入正确的手机号" gorm:"index"`
+	Cid       string `json:"cid" gorm:"index"`
+	IsDeleted bool   `json:"-"`
+	Gender    string `json:"gender"`
+	Birthday  string `json:"birthday"`
+	Avatar    File   `json:"avatar" gorm:"type:varchar(255)"`
+	AvatarId  string `json:"-" gorm:"type:varchar(255)"`
+	Age       int    `json:"age"`
+	Role      string `json:"role"`
 }
 
 type Users []User

@@ -1,14 +1,23 @@
 package models
 
+import "time"
+
 type Pagination struct {
 	PageNo   int `json:"pageNo"`
 	PageSize int `json:"pageSize"`
 }
 
+type Model struct {
+	Id        uint       `json:"-" gorm:"primary_key"`
+	CreatedAt time.Time  `json:"-" gorm:"autoCreateTime" `
+	UpdatedAt time.Time  `json:"-"`
+	DeletedAt *time.Time `json:"-"`
+}
+
 type Result struct {
 	Code    int    `json:"code"`
 	Message string `json:"msg"`
-	Data    any    `json:"data"`
+	Data    any    `json:"data,omitempty" `
 }
 
 func maskPhoneNumber(phone string) string {
@@ -22,19 +31,17 @@ func maskPhoneNumber(phone string) string {
 }
 
 type File struct {
-	Id         int    `json:"-" gorm:"primary_key"`
-	FileId     string `json:"file_id" gorm:"index"`
-	FileName   string `json:"file_name"`
-	FileUrl    string `json:"file_url"`
-	FileType   string `json:"file_type"`
-	FileSize   int    `json:"file_size"`
-	FileMd5    string `json:"file_md5"`
-	CreateTime string `json:"createTime"`
-	IsDeleted  bool   `json:"-"`
+	Model
+	FileId   string `json:"file_id" gorm:"index"`
+	FileName string `json:"file_name"`
+	FileUrl  string `json:"file_url"`
+	FileType string `json:"file_type"`
+	FileSize int    `json:"file_size"`
+	FileMd5  string `json:"file_md5"`
 }
 
 type Location struct {
-	Id         int    `json:"-" gorm:"primary_key"`
+	Model
 	LocationId string `json:"location_id" gorm:"index"`
 	Country    string `json:"country"`
 	City       string `json:"city"`
@@ -44,7 +51,26 @@ type Location struct {
 	StreetNum  string `json:"street_num"`
 	Longitude  string `json:"longitude"`
 	Latitude   string `json:"latitude"`
-	CreateTime string `json:"createTime"`
-	UpdateTime string `json:"updateTime"`
-	IsDeleted  bool   `json:"-"`
+}
+
+func HasFile(fileId string) bool {
+	db := DB.Where("file_id = ?", fileId).Where("is_deleted = 0").First(&File{})
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		return false
+	}
+	return true
+}
+
+func CreateFile(file *File) error {
+	hasFile := HasFile(file.FileId)
+	if hasFile {
+		return nil
+	}
+	db := DB.Create(file)
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		return db.Error
+	}
+	return nil
 }

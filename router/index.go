@@ -49,14 +49,19 @@ func getUserApi(router *gin.Engine) {
 func getArticleApi(router *gin.Engine) {
 	r := router.Group("/article")
 
+	r.Use(checkTokenMiddleware)
+
 	r.GET("", controllers.GetArticles)
 
 	r.GET(":aid", controllers.GetArticle)
+
+	r.POST("", controllers.CreateArticle)
 }
 
 func GetRouter() *gin.Engine {
 	router := gin.Default()
 	getAuthApi(router)
 	getUserApi(router)
+	getArticleApi(router)
 	return router
 }

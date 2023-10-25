@@ -20,7 +20,9 @@ func (cv *CustomValidator) ValidatePhone(fl validator.FieldLevel) bool {
 	if !ok {
 		return false
 	}
-
+	if phone == "" {
+		return true
+	}
 	// Regular expression to validate phone numbers (allowing only digits and dashes)
 	phoneRegex := regexp.MustCompile(`^((1[3-9])[0-9]{9})|(0\d{2,3}-?\d{7,8})$`)
 	return phoneRegex.MatchString(phone)
@@ -31,7 +33,9 @@ func (cv *CustomValidator) ValidateEmail(fl validator.FieldLevel) bool {
 	if !ok {
 		return false
 	}
-
+	if email == "" {
+		return true
+	}
 	// Regular expression to validate email addresses
 	emailRegex := regexp.MustCompile(`^\w+@[a-zA-Z0-9]{2,10}(?:\.[a-z]{2,4}){1,3}$`)
 	return emailRegex.MatchString(email)

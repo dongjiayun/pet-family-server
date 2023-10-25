@@ -10,7 +10,10 @@ import (
 )
 
 func GetUsers(c *gin.Context) {
-	var pagination models.Pagination
+	pagination := models.Pagination{
+		PageSize: 20,
+		PageNo:   1,
+	}
 	err := c.ShouldBindJSON(&pagination)
 	if err != nil {
 		c.JSON(200, models.Result{Code: 10001, Message: err.Error()})
@@ -103,7 +106,7 @@ func CreateByEmail(ch chan string, c *gin.Context, email string) {
 
 	user.Password = "123456"
 
-	db := models.DB.Create(&user)
+	db := models.DB.Omit("Avatar").Create(&user)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
