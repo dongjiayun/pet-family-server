@@ -22,6 +22,10 @@ func GetArticles(c *gin.Context) {
 	var articles []models.Article
 	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Find(&articles)
 	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 0, Message: "success"})
+			return
+		}
 		// SQL执行失败，返回错误信息
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 0, Message: "success", Data: articles})
@@ -87,7 +91,7 @@ func CreateArticle(c *gin.Context) {
 
 	uuid := uuid.New()
 	uuidStr := uuid.String()
-	article.ArticleId = "A-" + uuidStr
+	article.ArticleId = "Article-" + uuidStr
 
 	db := models.DB.Omit("Author", "Covers", "Tags", "Location", "Likes", "Collects", "Comments").Create(&article)
 	if db.Error != nil {

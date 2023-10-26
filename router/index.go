@@ -58,10 +58,25 @@ func getArticleApi(router *gin.Engine) {
 	r.POST("", controllers.CreateArticle)
 }
 
+func getTagApi(router *gin.Engine) {
+	r := router.Group("/tag")
+
+	r.Use(checkTokenMiddleware)
+
+	r.GET("", controllers.GetTags)
+
+	r.GET(":tid", controllers.GetTag)
+
+	r.POST("", controllers.CreateTag)
+
+	r.PUT(":tid", controllers.UpdateTag)
+}
+
 func GetRouter() *gin.Engine {
 	router := gin.Default()
 	getAuthApi(router)
 	getUserApi(router)
 	getArticleApi(router)
+	getTagApi(router)
 	return router
 }
