@@ -3,7 +3,7 @@ package models
 type Tag struct {
 	Model
 	TagId string `json:"tagId" gorm:"index;varchar(255)"`
-	Label string `json:"label"`
+	Label string `json:"label" binding:"required"`
 }
 
 type Comment struct {

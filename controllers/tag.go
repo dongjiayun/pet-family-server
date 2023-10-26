@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go-pet-family/models"
-	"go-pet-family/utils"
 )
 
 func GetTags(c *gin.Context) {
@@ -20,7 +19,7 @@ func GetTags(c *gin.Context) {
 	pageNo := pagination.PageNo
 	pageSize := pagination.PageSize
 	var tags []models.Tag
-	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Find(&tags)
+	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Where("deleted_at IS NULL").Find(&tags)
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 0, Message: "success"})
@@ -35,10 +34,14 @@ func GetTags(c *gin.Context) {
 }
 
 func GetTag(c *gin.Context) {
-	tid := c.Param("tid")
+	tagId := c.Param("tagId")
 	var tag models.Tag
-	db := models.DB.Where("tag_id = ?", tid).First(&tag)
+	db := models.DB.Where("tag_id = ?", tagId).Where("deleted_at IS NULL").First(&tag)
 	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 0, Message: "success"})
+			return
+		}
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
@@ -51,8 +54,7 @@ func CreateTag(c *gin.Context) {
 	err := c.ShouldBindJSON(&tag)
 	if err != nil {
 		// 显示自定义的错误信息
-		msg := utils.GetValidMsg(err, &tag)
-		c.JSON(200, models.Result{Code: 10001, Message: msg})
+		c.JSON(200, models.Result{Code: 10001, Message: err.Error()})
 		return
 	}
 
@@ -69,23 +71,27 @@ func CreateTag(c *gin.Context) {
 }
 
 func UpdateTag(c *gin.Context) {
-	tid := c.Param("tid")
+	tagId := c.Param("tagId")
 	var oldTag models.Tag
-	db := models.DB.Where("tag_id = ?", tid).First(&oldTag)
+	db := models.DB.Where("tag_id = ?", tagId).Where("deleted_at IS NULL").First(&oldTag)
 	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 10001, Message: "未找到该条记录"})
+			return
+		}
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
 	var tag models.Tag
+	tag.TagId = tagId
 	err := c.ShouldBindJSON(&tag)
 	if err != nil {
 		// 显示自定义的错误信息
-		msg := utils.GetValidMsg(err, &tag)
-		c.JSON(200, models.Result{Code: 10001, Message: msg})
+		c.JSON(200, models.Result{Code: 10001, Message: err.Error()})
 		return
 	}
-	db = models.DB.Model(&oldTag).Where("tag_id = ?", tid).Updates(&tag)
+	db = models.DB.Model(&oldTag).Where("tag_id = ?", tagId).Updates(&tag)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})

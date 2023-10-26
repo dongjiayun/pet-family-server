@@ -22,7 +22,7 @@ func GetUsers(c *gin.Context) {
 	pageNo := pagination.PageNo
 	pageSize := pagination.PageSize
 	var users models.Users
-	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Where("is_deleted = 0").Find(&users)
+	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Where("deleted_at IS NULL").Find(&users)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
@@ -38,7 +38,7 @@ func GetUsers(c *gin.Context) {
 func GetUser(c *gin.Context) {
 	cid := c.Param("cid")
 	var user models.User
-	db := models.DB.Where("cid = ?", cid).Where("is_deleted = 0").Find(&user)
+	db := models.DB.Where("cid = ?", cid).Where("deleted_at IS NULL").Find(&user)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
@@ -123,8 +123,12 @@ func UpdateUser(c *gin.Context) {
 	cid := c.Param("cid")
 	var user models.UpdateUserFields
 	var oldUser models.User
-	getUser := models.DB.Where("cid = ?", cid).First(&oldUser)
+	getUser := models.DB.Where("cid = ?", cid).Where("deleted_at IS NULL").First(&oldUser)
 	if getUser.Error != nil {
+		if getUser.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 10001, Message: "未找到该条记录"})
+			return
+		}
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return

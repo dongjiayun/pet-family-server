@@ -65,11 +65,11 @@ func getTagApi(router *gin.Engine) {
 
 	r.GET("", controllers.GetTags)
 
-	r.GET(":tid", controllers.GetTag)
+	r.GET(":tagId", controllers.GetTag)
 
 	r.POST("", controllers.CreateTag)
 
-	r.PUT(":tid", controllers.UpdateTag)
+	r.PUT(":tagId", controllers.UpdateTag)
 }
 
 func GetRouter() *gin.Engine {

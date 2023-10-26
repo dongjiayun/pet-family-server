@@ -65,7 +65,7 @@ type Location struct {
 }
 
 func HasFile(fileId string) bool {
-	db := DB.Where("file_id = ?", fileId).Where("is_deleted = 0").First(&File{})
+	db := DB.Where("file_id = ?", fileId).Where("deleted_at IS NULL").First(&File{})
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		return false
