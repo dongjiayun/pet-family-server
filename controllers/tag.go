@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go-pet-family/models"
+	"time"
 )
 
 func GetTags(c *gin.Context) {
@@ -98,4 +100,16 @@ func UpdateTag(c *gin.Context) {
 		return
 	}
 	c.JSON(200, models.Result{0, "success", tag})
+}
+
+func DeleteTag(c *gin.Context) {
+	tagId := c.Param("tagId")
+	db := models.DB.Model(&models.Tag{}).Where("tag_id = ?", tagId).Where("deleted_at IS NULL").Update("deleted_at", time.Now())
+	if db.Error != nil {
+		fmt.Println(db.Error.Error())
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	c.JSON(200, models.Result{0, "success", nil})
 }

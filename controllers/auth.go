@@ -24,7 +24,7 @@ type MyClaims struct {
 	jwt.StandardClaims
 }
 
-const TokenExpireDuration = time.Hour * 24
+const TokenExpireDuration = config.TokenExpireDuration
 
 var Secret = []byte(config.Secret)
 

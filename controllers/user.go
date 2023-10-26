@@ -7,6 +7,7 @@ import (
 	"go-pet-family/models"
 	"go-pet-family/utils"
 	"gorm.io/gorm"
+	"time"
 )
 
 func GetUsers(c *gin.Context) {
@@ -177,7 +178,7 @@ func UpdateUser(c *gin.Context) {
 func DeleteUser(c *gin.Context) {
 	cid := c.Param("cid")
 	fmt.Println(cid)
-	db := models.DB.Model(&models.User{}).Where("cid = ?", cid).Update("is_deleted", 1)
+	db := models.DB.Model(&models.User{}).Where("cid = ?", cid).Update("deleted_at", time.Now())
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})

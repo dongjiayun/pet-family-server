@@ -70,6 +70,8 @@ func getTagApi(router *gin.Engine) {
 	r.POST("", controllers.CreateTag)
 
 	r.PUT(":tagId", controllers.UpdateTag)
+
+	r.DELETE(":tagId", controllers.DeleteTag)
 }
 
 func GetRouter() *gin.Engine {
