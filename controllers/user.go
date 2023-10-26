@@ -28,7 +28,11 @@ func GetUsers(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	c.JSON(200, models.Result{0, "success", models.GetSafeUsers(users)})
+	var totalCount int64
+	models.DB.Model(&users).Count(&totalCount)
+	safeUsers := models.GetSafeUsers(users)
+	list := models.GetListData[models.SafeUser](safeUsers, pageNo, pageSize, totalCount)
+	c.JSON(200, models.Result{0, "success", list})
 }
 
 func GetUser(c *gin.Context) {

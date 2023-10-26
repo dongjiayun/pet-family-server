@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"math"
+	"time"
+)
 
 type Pagination struct {
 	PageNo   int `json:"pageNo"`
@@ -18,6 +21,14 @@ type Result struct {
 	Code    int    `json:"code"`
 	Message string `json:"msg"`
 	Data    any    `json:"data,omitempty" `
+}
+
+type ListData struct {
+	List       any   `json:"list"`
+	TotalPage  int   `json:"totalPage"`
+	TotalCount int64 `json:"totalCount"`
+	PageNo     int   `json:"pageNo"`
+	PageSize   int   `json:"pageSize"`
 }
 
 func maskPhoneNumber(phone string) string {
@@ -73,4 +84,14 @@ func CreateFile(file *File) error {
 		return db.Error
 	}
 	return nil
+}
+
+func GetListData[T interface{}](list []T, pageNo int, pageSize int, totalCount int64) ListData {
+	return ListData{
+		List:       list,
+		TotalPage:  int(math.Ceil(float64(totalCount) / float64(pageSize))),
+		TotalCount: totalCount,
+		PageNo:     pageNo,
+		PageSize:   pageSize,
+	}
 }

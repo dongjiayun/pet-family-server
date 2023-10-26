@@ -30,19 +30,18 @@ func GetArticles(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+
+	var count int64
+	models.DB.Model(&articles).Count(&count)
+
 	for i := range articles {
 		article := &articles[i]
-		var user models.User
-		fmt.Println("article.AuthorId", article.AuthorId)
-		db := models.DB.Where("cid = ?", article.AuthorId).Where("deleted_at IS NULL").First(&user)
-		if db.Error != nil {
-			// SQL执行失败，返回错误信息
-			c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
-			return
-		}
-		article.Author = models.GetSafeUser(user)
+		setArticleInfo(article, c)
 	}
-	c.JSON(200, models.Result{0, "success", articles})
+
+	list := models.GetListData[models.Article](articles, pageNo, pageSize, count)
+
+	c.JSON(200, models.Result{0, "success", list})
 }
 
 func GetArticle(c *gin.Context) {
@@ -59,15 +58,19 @@ func GetArticle(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+	setArticleInfo(&article, c)
+	c.JSON(200, models.Result{0, "success", article})
+}
+
+func setArticleInfo(article *models.Article, c *gin.Context) {
 	var user models.User
-	userdb := models.DB.Where("cid = ?", article.AuthorId).Where("deleted_at IS NULL").First(&user)
-	if userdb.Error != nil {
+	db := models.DB.Where("cid = ?", article.AuthorId).Where("deleted_at IS NULL").First(&user)
+	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
 	article.Author = models.GetSafeUser(user)
-	c.JSON(200, models.Result{0, "success", article})
 }
 
 func CreateArticle(c *gin.Context) {
