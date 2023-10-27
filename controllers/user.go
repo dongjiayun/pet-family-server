@@ -90,6 +90,11 @@ func CreateUser(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+
+	ch := make(chan string)
+	go CheckAndCreateExtendUserInfo(c, user.Cid, ch)
+	<-ch
+
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(user)})
 }
 
@@ -111,13 +116,36 @@ func CreateByEmail(ch chan string, c *gin.Context, email string) {
 
 	user.Password = "123456"
 
-	db := models.DB.Omit("Avatar").Create(&user)
+	db := models.DB.Create(&user)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+	chUE := make(chan string)
+	go CheckAndCreateExtendUserInfo(c, user.Cid, ch)
+	<-chUE
 	ch <- "success"
+}
+
+func CheckAndCreateExtendUserInfo(c *gin.Context, cid string, ch chan string) {
+	var userExtendInfo models.UserExtendInfo
+	userExtendInfo.Cid = cid
+	db := models.DB.Where("cid = ?", cid).First(&userExtendInfo)
+	if db.Error == nil {
+		ch <- "success"
+	} else if db.Error == gorm.ErrRecordNotFound {
+		db := models.DB.Create(&userExtendInfo)
+		if db.Error != nil {
+			// SQL执行失败，返回错误信息
+			c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+			return
+		}
+		ch <- "success"
+	} else {
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
 }
 
 func UpdateUser(c *gin.Context) {
@@ -172,6 +200,9 @@ func UpdateUser(c *gin.Context) {
 		Birthday: user.Birthday,
 		Role:     user.Role,
 	}
+	ch := make(chan string)
+	go CheckAndCreateExtendUserInfo(c, resultUser.Cid, ch)
+	<-ch
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(resultUser)})
 }
 

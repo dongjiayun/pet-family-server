@@ -16,6 +16,14 @@ func checkTokenMiddleware(c *gin.Context) {
 	c.Set("cid", checkToken.Cid)
 }
 
+func checkUserExtendInfoMiddleware(c *gin.Context) {
+	cid, _ := c.Get("cid")
+	cidString, _ := cid.(string)
+	chUE := make(chan string)
+	go controllers.CheckAndCreateExtendUserInfo(c, cidString, chUE)
+	<-chUE
+}
+
 func getAuthApi(router *gin.Engine) {
 	r := router.Group("/auth")
 
@@ -51,6 +59,8 @@ func getArticleApi(router *gin.Engine) {
 
 	r.Use(checkTokenMiddleware)
 
+	r.Use(checkUserExtendInfoMiddleware)
+
 	r.GET("", controllers.GetArticles)
 
 	r.GET(":articleId", controllers.GetArticle)
@@ -58,12 +68,18 @@ func getArticleApi(router *gin.Engine) {
 	r.POST("", controllers.CreateArticle)
 
 	r.PUT(":articleId", controllers.UpdateArticle)
+
+	r.POST("/like/:articleId", controllers.LikeArticle)
+
+	r.DELETE("/like/:articleId", controllers.CancelLikeArticle)
 }
 
 func getTagApi(router *gin.Engine) {
 	r := router.Group("/tag")
 
 	r.Use(checkTokenMiddleware)
+
+	r.Use(checkUserExtendInfoMiddleware)
 
 	r.GET("", controllers.GetTags)
 

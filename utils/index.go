@@ -20,10 +20,21 @@ func BindJson(c *gin.Context, obj any) (err error) {
 	return nil
 }
 
-func ArrayIncludes(arr []string, target string) bool {
-	numSet := make(map[string]bool)
-	for _, num := range arr {
-		numSet[num] = true
+func ArrayIncludes[T any](arr []T, value any, fn func(T) any) bool {
+	for _, v := range arr {
+		if value == fn(v) {
+			return true
+		}
 	}
-	return numSet[target]
+	return false
+}
+
+func ArrayFilter[T any](arr []T, fn func(T) bool) []T {
+	result := make([]T, 0)
+	for _, v := range arr {
+		if fn(v) {
+			result = append(result, v)
+		}
+	}
+	return result
 }

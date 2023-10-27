@@ -22,6 +22,15 @@ type User struct {
 	Role      string `json:"role"`
 }
 
+type UserExtendInfo struct {
+	Id           uint     `json:"-" gorm:"primary_key"`
+	Cid          string   `json:"cid" gorm:"index"`
+	Comments     Comments `json:"comments" gorm:"type:json"`
+	LikeArticles Articles `json:"likes" gorm:"type:json"`
+	LikeComments Comments `json:"likes" gorm:"type:json"`
+	Collects     Articles `json:"collects" gorm:"type:json"`
+}
+
 type Users []User
 
 func (user User) TableName() string {
@@ -77,7 +86,7 @@ func (users *SafeUsers) Scan(value interface{}) error {
 	return json.Unmarshal(stringValue, users)
 }
 
-func (users *SafeUsers) Value() (driver.Value, error) {
+func (users SafeUsers) Value() (driver.Value, error) {
 	// 将字符串切片转换为JSON字符串存储到数据库中
 	jsonString, err := json.Marshal(users)
 	if err != nil {
