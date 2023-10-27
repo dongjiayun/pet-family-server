@@ -12,6 +12,4 @@ const SmtpPort = 465
 
 const SmtpUser = "1009008432@qq.com"
 
-const SmtpPassword = "czzzlctepdeubeei"
-
 const TokenExpireDuration = time.Hour * 24 * 30
