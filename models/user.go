@@ -1,5 +1,11 @@
 package models
 
+import (
+	"database/sql/driver"
+	"errors"
+	"github.com/goccy/go-json"
+)
+
 type User struct {
 	Model
 	Username  string `json:"username"`
@@ -10,7 +16,7 @@ type User struct {
 	IsDeleted bool   `json:"-"`
 	Gender    string `json:"gender"`
 	Birthday  string `json:"birthday"`
-	Avatar    File   `json:"avatar" gorm:"type:varchar(255)"`
+	Avatar    File   `json:"avatar" gorm:"type:json"`
 	AvatarId  string `json:"-" gorm:"type:varchar(255)"`
 	Age       int    `json:"age"`
 	Role      string `json:"role"`
@@ -29,9 +35,55 @@ type SafeUser struct {
 	Cid      string `json:"cid"`
 	Gender   string `json:"gender"`
 	Birthday string `json:"birthday"`
-	Avatar   File   `json:"avatar" gorm:"foreignKey:FileId;type:varchar(255)"`
+	Avatar   File   `json:"avatar" gorm:"type:json"`
 	Age      int    `json:"age"`
 	Role     string `json:"role"`
+}
+
+func (safeUser *SafeUser) Scan(value interface{}) error {
+	// 将数据库中的值解析为字符串切片
+	if value == nil {
+		*safeUser = SafeUser{}
+		return nil
+	}
+	stringValue, ok := value.([]byte)
+	if !ok {
+		return errors.New("Invalid value type")
+	}
+	return json.Unmarshal(stringValue, safeUser)
+}
+
+func (safeUser SafeUser) Value() (driver.Value, error) {
+	// 将字符串切片转换为JSON字符串存储到数据库中
+	jsonString, err := json.Marshal(safeUser)
+	if err != nil {
+		return nil, err
+	}
+	return string(jsonString), nil
+}
+
+type SafeUsers []SafeUser
+
+func (users *SafeUsers) Scan(value interface{}) error {
+	// 将数据库中的值解析为字符串切片
+	if value == nil {
+		*users = []SafeUser{}
+		return nil
+	}
+	stringValue, ok := value.([]byte)
+	if !ok {
+		return errors.New("Invalid value type")
+	}
+	return json.Unmarshal(stringValue, users)
+}
+
+func (users *SafeUsers) Value() (driver.Value, error) {
+	// 将字符串切片转换为JSON字符串存储到数据库中
+	jsonString, err := json.Marshal(users)
+	if err != nil {
+		return nil, err
+	}
+	return string(jsonString), nil
 }
 
 func GetSafeUser(user User) SafeUser {

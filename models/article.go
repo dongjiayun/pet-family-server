@@ -1,5 +1,11 @@
 package models
 
+import (
+	"database/sql/driver"
+	"errors"
+	"github.com/goccy/go-json"
+)
+
 type Tag struct {
 	Model
 	TagId string `json:"tagId" gorm:"index;varchar(255)"`
@@ -18,26 +24,92 @@ type Comment struct {
 	Attachments []File   `json:"attachments" gorm:"foreignKey:FileId;type:varchar(255)"`
 }
 
+type Tags []Tag
+
+func (tags *Tags) Scan(value interface{}) error {
+	// 将数据库中的值解析为字符串切片
+	if value == nil {
+		*tags = []Tag{}
+		return nil
+	}
+	stringValue, ok := value.([]byte)
+	if !ok {
+		return errors.New("Invalid value type")
+	}
+	return json.Unmarshal(stringValue, tags)
+}
+
+func (tags Tags) Value() (driver.Value, error) {
+	// 将字符串切片转换为JSON字符串存储到数据库中
+	jsonString, err := json.Marshal(tags)
+	if err != nil {
+		return nil, err
+	}
+	return string(jsonString), nil
+}
+
+type Covers []File
+
+func (covers *Covers) Scan(value interface{}) error {
+	// 将数据库中的值解析为字符串切片
+	if value == nil {
+		*covers = []File{} // covers
+		return nil
+	}
+	stringValue, ok := value.([]byte)
+	if !ok {
+		return errors.New("Invalid value type")
+	}
+	return json.Unmarshal(stringValue, covers)
+}
+
+func (covers Covers) Value() (driver.Value, error) {
+	// 将字符串切片转换为JSON字符串存储到数据库中
+	jsonString, err := json.Marshal(covers)
+	if err != nil {
+		return nil, err
+	}
+	return string(jsonString), nil
+}
+
+type Comments []Comment
+
+func (comments *Comments) Scan(value interface{}) error {
+	// 将数据库中的值解析为字符串切片
+	if value == nil {
+		*comments = []Comment{}
+		return nil
+	}
+	stringValue, ok := value.([]byte)
+	if !ok {
+		return errors.New("Invalid value type")
+	}
+	return json.Unmarshal(stringValue, comments)
+}
+
+func (comments Comments) Value() (driver.Value, error) {
+	// 将字符串切片转换为JSON字符串存储到数据库中
+	jsonString, err := json.Marshal(comments)
+	if err != nil {
+		return nil, err
+	}
+	return string(jsonString), nil
+}
+
 type Article struct {
 	Model
-	ArticleId     string     `json:"article_id" gorm:"index"`
-	Title         string     `json:"title" binding:"required"`
-	Content       string     `json:"content" binding:"required"`
-	Author        SafeUser   `json:"author" gorm:"type:varchar(255)"`
-	AuthorId      string     `json:"-" gorm:"type:varchar(255)"`
-	Covers        []File     `json:"covers" gorm:"type:varchar(255)"`
-	CoverIds      []string   `json:"-" gorm:"type:varchar(255)"`
-	Tags          []Tag      `json:"tags" gorm:"type:varchar(255)"`
-	TagIds        []string   `json:"-" gorm:"type:varchar(255)"`
-	Location      Location   `json:"location" gorm:"type:varchar(255)"`
-	LocationId    string     `json:"locationId" gorm:"type:varchar(255)"`
-	Likes         []SafeUser `json:"-" gorm:"type:varchar(255)"`
-	LikeIds       []string   `json:"-" gorm:"type:varchar(255)"`
-	LikesCount    int        `json:"likesCount"`
-	Collects      []SafeUser `json:"-" gorm:"type:varchar(255)"`
-	CollectIds    []string   `json:"-" gorm:"type:varchar(255)"`
-	ColllectCount int        `json:"collectCount"`
-	Comments      []Comment  `json:"comments" gorm:"type:varchar(255)"`
-	CommentIds    []string   `json:"-" gorm:"type:varchar(255)"`
-	CommentCount  int        `json:"commentCount"`
+	ArticleId     string    `json:"article_id" gorm:"index"`
+	Title         string    `json:"title" binding:"required"`
+	Content       string    `json:"content" binding:"required"`
+	Author        SafeUser  `json:"author" gorm:"type:json"`
+	Covers        Covers    `json:"covers" gorm:"type:json"`
+	Tags          Tags      `json:"tags" gorm:"type:json"`
+	Location      Location  `json:"location" gorm:"type:json"`
+	Likes         SafeUsers `json:"likes" gorm:"type:json"`
+	LikesCount    int       `json:"likesCount"`
+	Collects      SafeUsers `json:"collects" gorm:"type:json"`
+	ColllectCount int       `json:"collectCount"`
+	Comments      Comments  `json:"comments" gorm:"type:json"`
+	CommentCount  int       `json:"commentCount"`
+	UpdateBy      SafeUser  `json:"-" gorm:"type:json"`
 }

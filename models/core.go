@@ -20,7 +20,6 @@ func init() {
 		&Article{},
 		&Tag{},
 		&Comment{},
-		&File{},
 		&Location{},
 		&User{},
 	)

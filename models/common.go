@@ -1,6 +1,9 @@
 package models
 
 import (
+	"database/sql/driver"
+	"errors"
+	"github.com/goccy/go-json"
 	"math"
 	"time"
 )
@@ -51,6 +54,28 @@ type File struct {
 	FileMd5  string `json:"file_md5"`
 }
 
+func (file *File) Scan(value interface{}) error {
+	// 将数据库中的值解析为字符串切片
+	if value == nil {
+		*file = File{}
+		return nil
+	}
+	stringValue, ok := value.([]byte)
+	if !ok {
+		return errors.New("Invalid value type")
+	}
+	return json.Unmarshal(stringValue, file)
+}
+
+func (file File) Value() (driver.Value, error) {
+	// 将字符串切片转换为JSON字符串存储到数据库中
+	jsonString, err := json.Marshal(file)
+	if err != nil {
+		return nil, err
+	}
+	return string(jsonString), nil
+}
+
 type Location struct {
 	Model
 	LocationId string `json:"location_id" gorm:"index"`
@@ -64,26 +89,26 @@ type Location struct {
 	Latitude   string `json:"latitude"`
 }
 
-func HasFile(fileId string) bool {
-	db := DB.Where("file_id = ?", fileId).Where("deleted_at IS NULL").First(&File{})
-	if db.Error != nil {
-		// SQL执行失败，返回错误信息
-		return false
-	}
-	return true
-}
-
-func CreateFile(file *File) error {
-	hasFile := HasFile(file.FileId)
-	if hasFile {
+func (location *Location) Scan(value interface{}) error {
+	// 将数据库中的值解析为字符串切片
+	if value == nil {
+		*location = Location{}
 		return nil
 	}
-	db := DB.Create(file)
-	if db.Error != nil {
-		// SQL执行失败，返回错误信息
-		return db.Error
+	stringValue, ok := value.([]byte)
+	if !ok {
+		return errors.New("Invalid value type")
 	}
-	return nil
+	return json.Unmarshal(stringValue, location)
+}
+
+func (location Location) Value() (driver.Value, error) {
+	// 将字符串切片转换为JSON字符串存储到数据库中
+	jsonString, err := json.Marshal(location)
+	if err != nil {
+		return nil, err
+	}
+	return string(jsonString), nil
 }
 
 func GetListData[T interface{}](list []T, pageNo int, pageSize int, totalCount int64) ListData {

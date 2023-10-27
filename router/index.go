@@ -53,9 +53,11 @@ func getArticleApi(router *gin.Engine) {
 
 	r.GET("", controllers.GetArticles)
 
-	r.GET(":aid", controllers.GetArticle)
+	r.GET(":articleId", controllers.GetArticle)
 
 	r.POST("", controllers.CreateArticle)
+
+	r.PUT(":articleId", controllers.UpdateArticle)
 }
 
 func getTagApi(router *gin.Engine) {
