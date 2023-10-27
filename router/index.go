@@ -52,6 +52,10 @@ func getUserApi(router *gin.Engine) {
 	r.DELETE(":cid", controllers.DeleteUser)
 
 	r.DELETE("/delete/:cid", controllers.HardDeleteUser)
+
+	r.POST("/follow/:cid", controllers.FollowUser)
+
+	r.DELETE("/follow/:cid", controllers.UnFollowUser)
 }
 
 func getArticleApi(router *gin.Engine) {
@@ -72,6 +76,10 @@ func getArticleApi(router *gin.Engine) {
 	r.POST("/like/:articleId", controllers.LikeArticle)
 
 	r.DELETE("/like/:articleId", controllers.CancelLikeArticle)
+
+	r.POST("/collect/:articleId", controllers.CollectArticle)
+
+	r.DELETE("/collect/:articleId", controllers.CancelCollectArticle)
 }
 
 func getTagApi(router *gin.Engine) {

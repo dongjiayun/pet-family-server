@@ -23,12 +23,13 @@ type User struct {
 }
 
 type UserExtendInfo struct {
-	Id           uint     `json:"-" gorm:"primary_key"`
-	Cid          string   `json:"cid" gorm:"index"`
-	Comments     Comments `json:"comments" gorm:"type:json"`
-	LikeArticles Articles `json:"likes" gorm:"type:json"`
-	LikeComments Comments `json:"likes" gorm:"type:json"`
-	Collects     Articles `json:"collects" gorm:"type:json"`
+	Id           uint      `json:"-" gorm:"primary_key"`
+	Cid          string    `json:"cid" gorm:"index"`
+	Comments     Comments  `json:"comments" gorm:"type:json"`
+	LikeArticles Articles  `json:"likesArticles" gorm:"type:json"`
+	LikeComments Comments  `json:"likesComments" gorm:"type:json"`
+	Collects     Articles  `json:"collects" gorm:"type:json"`
+	Follows      SafeUsers `json:"follows" gorm:"type:json"`
 }
 
 type Users []User
@@ -158,4 +159,35 @@ type AuthOtp struct {
 	Code    string `json:"code"`
 	Account string `json:"account"`
 	Ticket  string `json:"ticket"`
+}
+
+type UserDetail struct {
+	User
+	Comments     Comments  `json:"comments"`
+	LikeArticles Articles  `json:"likesArticles"`
+	LikeComments Comments  `json:"likesComments"`
+	Collects     Articles  `json:"collects""`
+	Follows      SafeUsers `json:"follows"`
+}
+
+type SafeUserDetail struct {
+	SafeUser
+	Comments     Comments  `json:"comments"`
+	LikeArticles Articles  `json:"likesArticles"`
+	LikeComments Comments  `json:"likesComments"`
+	Collects     Articles  `json:"collects""`
+	Follows      SafeUsers `json:"follows"`
+}
+
+func GetSafeUserDetail(user UserDetail) SafeUserDetail {
+	safeUser := GetSafeUser(user.User)
+	safeUserDetail := SafeUserDetail{
+		SafeUser: safeUser,
+	}
+	safeUserDetail.Comments = user.Comments
+	safeUserDetail.LikeArticles = user.LikeArticles
+	safeUserDetail.LikeComments = user.LikeComments
+	safeUserDetail.Collects = user.Collects
+	safeUserDetail.Follows = user.Follows
+	return safeUserDetail
 }

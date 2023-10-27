@@ -146,8 +146,10 @@ func LikeArticle(c *gin.Context) {
 		return
 	}
 	cid, _ := c.Get("cid")
-	hasLike := utils.ArrayIncludes[models.SafeUser](article.Likes, cid, func(item models.SafeUser) any {
-		return item.Cid
+	var userExtendInfo models.UserExtendInfo
+	models.DB.Where("cid = ?", cid.(string)).First(&userExtendInfo)
+	hasLike := utils.ArrayIncludes[models.Article](userExtendInfo.LikeArticles, articleId, func(item models.Article) any {
+		return item.ArticleId
 	})
 	if hasLike {
 		c.JSON(200, models.Result{Code: 10001, Message: "您已点赞"})
@@ -163,8 +165,6 @@ func LikeArticle(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	var userExtendInfo models.UserExtendInfo
-	models.DB.Where("cid = ?", cid.(string)).First(&userExtendInfo)
 	userExtendInfo.LikeArticles = append(userExtendInfo.LikeArticles, article)
 	updateDb = models.DB.Model(&userExtendInfo).Where("cid = ?", cid.(string)).Update("like_articles", userExtendInfo.LikeArticles)
 	if updateDb.Error != nil {
@@ -189,8 +189,10 @@ func CancelLikeArticle(c *gin.Context) {
 		return
 	}
 	cid, _ := c.Get("cid")
-	hasLike := utils.ArrayIncludes[models.SafeUser](article.Likes, cid, func(item models.SafeUser) any {
-		return item.Cid
+	var userExtendInfo models.UserExtendInfo
+	models.DB.Where("cid = ?", cid.(string)).First(&userExtendInfo)
+	hasLike := utils.ArrayIncludes[models.Article](userExtendInfo.LikeArticles, articleId, func(item models.Article) any {
+		return item.ArticleId
 	})
 	if hasLike == false {
 		c.JSON(200, models.Result{Code: 10001, Message: "您已取消"})
@@ -209,13 +211,101 @@ func CancelLikeArticle(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	var userExtendInfo models.UserExtendInfo
-	models.DB.Where("cid = ?", cid.(string)).First(&userExtendInfo)
 	userExtendInfo.LikeArticles = utils.ArrayFilter[models.Article](userExtendInfo.LikeArticles, func(item models.Article) bool {
 		return item.ArticleId != articleId
 	})
 	updateModel = models.DB.Model(&userExtendInfo).Where("cid = ?", cid.(string)).Update("like_articles", userExtendInfo.LikeArticles)
 	if updateModel.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	c.JSON(200, models.Result{0, "success", nil})
+}
+
+func CollectArticle(c *gin.Context) {
+	articleId := c.Param("articleId")
+	var article models.Article
+	db := models.DB.Where("article_id = ?", articleId).First(&article)
+	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 0, Message: "success"})
+			return
+		}
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	cid, _ := c.Get("cid")
+	var userExtendInfo models.UserExtendInfo
+	models.DB.Where("cid = ?", cid.(string)).First(&userExtendInfo)
+	hasCollect := utils.ArrayIncludes[models.Article](userExtendInfo.Collects, articleId, func(item models.Article) any {
+		return item.ArticleId
+	})
+	if hasCollect {
+		c.JSON(200, models.Result{Code: 10001, Message: "您已收藏"})
+		return
+	}
+	var user models.User
+	models.DB.Where("cid = ?", cid.(string)).First(&user)
+	collect := models.GetSafeUser(user)
+	article.Collects = append(article.Collects, collect)
+	updateDb := models.DB.Model(&article).Where("article_id = ?", articleId).Update("collects", article.Collects)
+	if updateDb.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	userExtendInfo.Collects = append(userExtendInfo.Collects, article)
+	updateDb = models.DB.Model(&userExtendInfo).Where("cid = ?", cid.(string)).Update("collects", userExtendInfo.Collects)
+	if updateDb.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	c.JSON(200, models.Result{0, "success", nil})
+}
+
+func CancelCollectArticle(c *gin.Context) {
+	articleId := c.Param("articleId")
+	var article models.Article
+	db := models.DB.Where("article_id = ?", articleId).First(&article)
+	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 0, Message: "success"})
+			return
+		}
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	cid, _ := c.Get("cid")
+	var userExtendInfo models.UserExtendInfo
+	models.DB.Where("cid = ?", cid.(string)).First(&userExtendInfo)
+	hasCollect := utils.ArrayIncludes[models.Article](userExtendInfo.Collects, articleId, func(item models.Article) any {
+		return item.ArticleId
+	})
+	if hasCollect == false {
+		c.JSON(200, models.Result{Code: 10001, Message: "您已取消"})
+		return
+	}
+	var user models.User
+	models.DB.Where("cid = ?", cid.(string)).First(&user)
+	collect := models.GetSafeUser(user)
+	article.Collects = utils.ArrayFilter[models.SafeUser](article.Collects, func(item models.SafeUser) bool {
+		return item.Cid != collect.Cid
+	})
+	updateDb := models.DB.Model(&article).Where("article_id = ?", articleId).Update("collects", article.Collects)
+	if updateDb.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	userExtendInfo.Collects = utils.ArrayFilter[models.Article](userExtendInfo.Collects, func(item models.Article) bool {
+		return item.ArticleId != articleId
+	})
+	updateDb = models.DB.Model(&userExtendInfo).Where("cid = ?", cid.(string)).Update("collects", userExtendInfo.Collects)
+	if updateDb.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return

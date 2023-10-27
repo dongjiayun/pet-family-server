@@ -38,14 +38,19 @@ func GetUsers(c *gin.Context) {
 
 func GetUser(c *gin.Context) {
 	cid := c.Param("cid")
-	var user models.User
-	db := models.DB.Where("cid = ?", cid).Where("deleted_at IS NULL").Find(&user)
+	var userDetail models.UserDetail
+	db := models.DB.Debug().Table("user").
+		Select("*").
+		Joins("LEFT JOIN user_extend_infos uei ON uei.cid = user.cid").
+		Where("user.cid = ?", cid).
+		Where("deleted_at IS NULL").
+		First(&userDetail)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	c.JSON(200, models.Result{0, "success", models.GetSafeUser(user)})
+	c.JSON(200, models.Result{0, "success", models.GetSafeUserDetail(userDetail)})
 }
 
 func CreateUser(c *gin.Context) {
@@ -249,4 +254,81 @@ func checkPhoneExists(phone string, exceptedPhone string) bool {
 		db = models.DB.Where("phone = ?", phone).First(&user)
 	}
 	return db.Error == nil
+}
+
+func FollowUser(c *gin.Context) {
+	targetCid := c.Param("cid")
+	cid, _ := c.Get("cid")
+
+	var userExtendInfo models.UserExtendInfo
+	models.DB.Where("cid = ?", cid).First(&userExtendInfo)
+	hasFollow := utils.ArrayIncludes[models.SafeUser](userExtendInfo.Follows, targetCid, func(item models.SafeUser) any {
+		return item.Cid
+	})
+	if hasFollow {
+		c.JSON(200, models.Result{Code: 10001, Message: "您已关注"})
+		return
+	}
+
+	var user models.User
+	db := models.DB.Where("cid = ?", targetCid).First(&user)
+	safeUser := models.GetSafeUser(user)
+	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 10001, Message: "未找到该条记录"})
+			return
+		}
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+
+	userExtendInfo.Follows = append(userExtendInfo.Follows, safeUser)
+
+	updateDb := models.DB.Model(&userExtendInfo).Where("cid = ?", cid).Update("follows", userExtendInfo.Follows)
+	if updateDb.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(user)})
+}
+
+func UnFollowUser(c *gin.Context) {
+	targetCid := c.Param("cid")
+	cid, _ := c.Get("cid")
+	var userExtendInfo models.UserExtendInfo
+	models.DB.Where("cid = ?", cid).First(&userExtendInfo)
+	hasFollow := utils.ArrayIncludes[models.SafeUser](userExtendInfo.Follows, targetCid, func(item models.SafeUser) any {
+		return item.Cid
+	})
+	if hasFollow == false {
+		c.JSON(200, models.Result{Code: 10001, Message: "您未关注"})
+		return
+	}
+	var user models.User
+	db := models.DB.Where("cid = ?", targetCid).First(&user)
+	safeUser := models.GetSafeUser(user)
+
+	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 10001, Message: "未找到该条记录"})
+			return
+		}
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+
+	userExtendInfo.Follows = utils.ArrayFilter[models.SafeUser](userExtendInfo.Follows, func(item models.SafeUser) bool {
+		return item.Cid != safeUser.Cid
+	})
+
+	updateDb := models.DB.Model(&userExtendInfo).Where("cid = ?", cid).Update("follows", userExtendInfo.Follows)
+	if updateDb.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	c.JSON(200, models.Result{Code: 0, Message: "success", Data: nil})
 }

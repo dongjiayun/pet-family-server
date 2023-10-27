@@ -13,6 +13,7 @@ var err error
 func init() {
 	dsn := config.DataBase
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+
 	if err != nil {
 		panic(err)
 	}
