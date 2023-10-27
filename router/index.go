@@ -2,9 +2,16 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/swaggo/files"
+	"github.com/swaggo/gin-swagger"
 	"go-pet-family/controllers"
 	"go-pet-family/models"
 )
+
+func genDoc(router *gin.Engine) {
+	url := ginSwagger.URL("http://localhost:8080/swagger/doc.json")
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
+}
 
 func checkTokenMiddleware(c *gin.Context) {
 	checkToken, _ := controllers.CheckToken(c)
@@ -102,6 +109,7 @@ func getTagApi(router *gin.Engine) {
 
 func GetRouter() *gin.Engine {
 	router := gin.Default()
+	genDoc(router)
 	getAuthApi(router)
 	getUserApi(router)
 	getArticleApi(router)
