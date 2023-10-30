@@ -119,6 +119,8 @@ func getCommentApi(router *gin.Engine) {
 	r.POST("", controllers.CreateComment)
 
 	r.PUT("", controllers.UpdateComment)
+
+	r.DELETE(":commentId", controllers.DeleteComment)
 }
 
 func getCommonApi(router *gin.Engine) {

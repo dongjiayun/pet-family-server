@@ -156,6 +156,28 @@ func CreateComment(c *gin.Context) {
 	c.JSON(200, models.Result{0, "success", comment.CommentId})
 }
 
+func DeleteComment(c *gin.Context) {
+	commentId := c.Param("commentId")
+	var comment models.Comment
+	db := models.DB.Where("comment_id = ?", commentId).Where("deleted_at IS NULL").First(&comment)
+	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 10001, Message: "未找到该条记录"})
+			return
+		}
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	db = models.DB.Model(&comment).Where("comment_id = ?", commentId).Update("deleted_at", time.Now())
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	c.JSON(200, models.Result{0, "success", nil})
+}
+
 func syncCommentInfo(comment *models.Comment, ch chan error) {
 	cid := comment.Author.Cid
 	var author models.User
