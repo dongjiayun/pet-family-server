@@ -108,14 +108,9 @@ func UpdateComment(c *gin.Context) {
 		Attachments: requestBody.Attachments,
 	}
 
-	update.IsAudit = true
-	update.AuditBy = "C-ADMIN"
-	update.AuditAt = time.Now()
-
-	cid, _ := c.Get("cid")
-	var user models.User
-	models.DB.Where("cid = ?", cid.(string)).First(&user)
-	update.UpdateBy = user.Cid
+	ch := make(chan string)
+	go models.CommonUpdate[models.Comment](&update, c, ch)
+	<-ch
 
 	db = models.DB.Model(&oldComment).Where("comment_id = ?", commentId).Updates(&update)
 	if db.Error != nil {
@@ -142,9 +137,9 @@ func CreateComment(c *gin.Context) {
 	uuidStr := uuid.String()
 	comment.CommentId = "Comment-" + uuidStr
 
-	comment.IsAudit = true
-	comment.Author.Cid = "C-ADMIN"
-	comment.AuditAt = time.Now()
+	ch := make(chan string)
+	go models.CommonCreate[models.Comment](&comment, ch)
+	<-ch
 
 	db := models.DB.Create(&comment)
 	if db.Error != nil {

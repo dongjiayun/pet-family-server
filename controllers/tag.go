@@ -64,9 +64,9 @@ func CreateTag(c *gin.Context) {
 	uuidSring := newUUID.String()
 	tag.TagId = "Tag-" + uuidSring
 
-	tag.IsAudit = true
-	tag.AuditBy = "C-ADMIN"
-	tag.AuditAt = time.Now()
+	ch := make(chan string)
+	go models.CommonCreate[models.Tag](&tag, ch)
+	<-ch
 
 	db := models.DB.Create(&tag)
 
@@ -103,14 +103,9 @@ func UpdateTag(c *gin.Context) {
 		Label: requestBody.Label,
 	}
 
-	update.IsAudit = true
-	update.AuditBy = "C-ADMIN"
-	update.AuditAt = time.Now()
-
-	cid, _ := c.Get("cid")
-	var user models.User
-	models.DB.Where("cid = ?", cid.(string)).First(&user)
-	update.UpdateBy = user.Cid
+	ch := make(chan string)
+	go models.CommonUpdate[models.Tag](&update, c, ch)
+	<-ch
 
 	db = models.DB.Model(&update).Where("tag_id = ?", tagId).Updates(&update)
 	if db.Error != nil {

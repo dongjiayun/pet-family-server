@@ -4,11 +4,14 @@ import (
 	"context"
 	"database/sql/driver"
 	"errors"
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-json"
 	"github.com/qiniu/go-sdk/v7/auth/qbox"
 	"github.com/qiniu/go-sdk/v7/storage"
 	"go-pet-family/config"
 	"math"
+	"reflect"
 	"time"
 )
 
@@ -23,9 +26,9 @@ type Model struct {
 	UpdatedAt time.Time `json:"-" gorm:"autoUpdateTime" `
 	DeletedAt time.Time `json:"-"`
 	IsAudit   bool      `json:"-"`
-	AuditBy   string    `json:"-" `
+	AuditBy   string    `json:"-" gorm:"type:varchar(255)"`
 	AuditAt   time.Time `json:"-"`
-	UpdateBy  string    `json:"-" `
+	UpdateBy  string    `json:"-" gorm:"type:varchar(255)"`
 }
 
 type Result struct {
@@ -163,4 +166,69 @@ func GetObsToken(bucket string, ch chan string) {
 	}
 	upToken := putPolicy.UploadToken(mac)
 	ch <- upToken
+}
+
+func CommonCreate[T interface{}](t *T, ch chan string) {
+	value := reflect.ValueOf(t).Elem()
+	typ := reflect.TypeOf(t).Elem()
+	// 确保t包含Model类型的字段
+	if _, ok := typ.FieldByName("Model"); !ok {
+		fmt.Println("T does not contain Model type")
+		return
+	}
+
+	// 设置IsAudit, AuditBy和AuditAt字段的值
+	isAuditField := value.FieldByName("IsAudit")
+	if isAuditField.IsValid() && isAuditField.CanSet() {
+		isAuditField.SetBool(true)
+	}
+
+	auditByField := value.FieldByName("AuditBy")
+	if auditByField.IsValid() && auditByField.CanSet() {
+		auditByField.SetString("C-ADMIN")
+	}
+
+	auditAtField := value.FieldByName("AuditAt")
+	if auditAtField.IsValid() && auditAtField.CanSet() {
+		auditAtField.Set(reflect.ValueOf(time.Now()))
+	}
+
+	ch <- "success"
+}
+
+func CommonUpdate[T interface{}](t *T, c *gin.Context, ch chan string) {
+	value := reflect.ValueOf(t).Elem()
+	typ := reflect.TypeOf(t).Elem()
+
+	// 确保t包含Model类型的字段
+	if _, ok := typ.FieldByName("Model"); !ok {
+		fmt.Println("T does not contain Model type")
+		return
+	}
+
+	// 设置IsAudit, AuditBy和AuditAt字段的值
+	isAuditField := value.FieldByName("IsAudit")
+
+	if isAuditField.IsValid() && isAuditField.CanSet() {
+		isAuditField.SetBool(true)
+	}
+
+	auditByField := value.FieldByName("AuditBy")
+	if auditByField.IsValid() && auditByField.CanSet() {
+		auditByField.SetString("C-ADMIN")
+	}
+
+	auditAtField := value.FieldByName("AuditAt")
+	if auditAtField.IsValid() && auditAtField.CanSet() {
+		auditAtField.Set(reflect.ValueOf(time.Now()))
+	}
+
+	cid, _ := c.Get("cid")
+	var user User
+	DB.Where("cid = ?", cid.(string)).First(&user)
+	updateByField := value.FieldByName("UpdateBy")
+	if updateByField.IsValid() && updateByField.CanSet() {
+		updateByField.SetString(user.Cid)
+	}
+	ch <- "success"
 }
