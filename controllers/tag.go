@@ -63,7 +63,13 @@ func CreateTag(c *gin.Context) {
 	newUUID := uuid.New()
 	uuidSring := newUUID.String()
 	tag.TagId = "Tag-" + uuidSring
+
+	tag.IsAudit = true
+	tag.AuditBy = "C-ADMIN"
+	tag.AuditAt = time.Now()
+
 	db := models.DB.Create(&tag)
+
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
@@ -73,9 +79,16 @@ func CreateTag(c *gin.Context) {
 }
 
 func UpdateTag(c *gin.Context) {
-	tagId := c.Param("tagId")
-	var oldTag models.Tag
-	db := models.DB.Where("tag_id = ?", tagId).Where("deleted_at IS NULL").First(&oldTag)
+	var requestBody models.Tag
+	err := c.ShouldBindJSON(&requestBody)
+	if err != nil {
+		// 显示自定义的错误信息
+		c.JSON(200, models.Result{Code: 10001, Message: err.Error()})
+		return
+	}
+	tagId := requestBody.TagId
+	var tag models.Tag
+	db := models.DB.Where("tag_id = ?", tagId).Where("deleted_at IS NULL").First(&tag)
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 10001, Message: "未找到该条记录"})
@@ -85,21 +98,27 @@ func UpdateTag(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	var tag models.Tag
-	tag.TagId = tagId
-	err := c.ShouldBindJSON(&tag)
-	if err != nil {
-		// 显示自定义的错误信息
-		c.JSON(200, models.Result{Code: 10001, Message: err.Error()})
-		return
+
+	update := models.Tag{
+		Label: requestBody.Label,
 	}
-	db = models.DB.Model(&oldTag).Where("tag_id = ?", tagId).Updates(&tag)
+
+	update.IsAudit = true
+	update.AuditBy = "C-ADMIN"
+	update.AuditAt = time.Now()
+
+	cid, _ := c.Get("cid")
+	var user models.User
+	models.DB.Where("cid = ?", cid.(string)).First(&user)
+	update.UpdateBy = user.Cid
+
+	db = models.DB.Model(&update).Where("tag_id = ?", tagId).Updates(&update)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	c.JSON(200, models.Result{0, "success", tag})
+	c.JSON(200, models.Result{0, "success", update.TagId})
 }
 
 func DeleteTag(c *gin.Context) {

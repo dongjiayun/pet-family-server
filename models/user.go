@@ -135,6 +135,7 @@ func GetSafeUsers(users []User) []SafeUser {
 }
 
 type UpdateUserFields struct {
+	Cid      string `json:"cid"`
 	Username string `json:"username"`
 	Email    string `json:"email" binding:"email" msg:"请输入正确的邮箱地址" gorm:"index"`
 	Phone    string `json:"phone" binding:"phone" msg:"请输入正确的手机号" gorm:"index"`
