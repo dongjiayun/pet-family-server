@@ -24,6 +24,7 @@ func init() {
 		&Location{},
 		&User{},
 		&UserExtendInfo{},
+		&Notice{},
 	)
 	if migErr != nil {
 		panic(migErr)

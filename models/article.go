@@ -16,11 +16,11 @@ type Comment struct {
 	Model
 	CommentId   string     `json:"commentId" gorm:"index"`
 	Content     string     `json:"content" binding:"required"`
-	Author      SafeUser   `json:"author"  gorm:"foreignKey:Cid;type:varchar(255)"`
-	Location    Location   `json:"location" gorm:"foreignKey:LocationId;type:varchar(255)"`
-	Likes       []SafeUser `json:"likes" gorm:"foreignKey:Cid;type:varchar(255)"`
+	Author      SafeUser   `json:"author"  gorm:"type:varchar(255)"`
+	Location    Location   `json:"location" gorm:"type:varchar(255)"`
+	Likes       []SafeUser `json:"likes" gorm:"type:varchar(255)"`
 	TargetId    string     `json:"targetId" binding:"required"`
-	Attachments []File     `json:"attachments" gorm:"foreignKey:FileId;type:varchar(255)"`
+	Attachments []File     `json:"attachments" gorm:"type:varchar(255)"`
 }
 
 type Tags []Tag

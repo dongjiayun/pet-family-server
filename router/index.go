@@ -123,6 +123,14 @@ func getCommentApi(router *gin.Engine) {
 	r.DELETE(":commentId", controllers.DeleteComment)
 }
 
+func getNoticeApi(router *gin.Engine) {
+	r := router.Group("/notice")
+
+	r.Use(checkTokenMiddleware)
+
+	r.POST("get", controllers.GetNotices)
+}
+
 func getCommonApi(router *gin.Engine) {
 	r := router.Group("/common")
 
