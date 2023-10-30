@@ -21,7 +21,6 @@ func init() {
 		&Article{},
 		&Tag{},
 		&Comment{},
-		&Location{},
 		&User{},
 		&UserExtendInfo{},
 		&Notice{},
