@@ -206,9 +206,14 @@ func UpdateUser(c *gin.Context) {
 		Birthday: newUser.Birthday,
 		Role:     newUser.Role,
 	}
-	ch := make(chan string)
-	go CheckAndCreateExtendUserInfo(c, resultUser.Cid, ch)
-	<-ch
+
+	updateCh := make(chan string)
+	go models.CommonUpdate[models.User](&resultUser, c, updateCh)
+	<-updateCh
+
+	syncExtendInfo := make(chan string)
+	go CheckAndCreateExtendUserInfo(c, resultUser.Cid, syncExtendInfo)
+	<-syncExtendInfo
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(resultUser)})
 }
 

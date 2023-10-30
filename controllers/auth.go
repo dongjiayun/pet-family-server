@@ -274,10 +274,6 @@ func handleWasteToken(token string) {
 	redisClient.Set(context.Background(), "blackList", __blackList, 0)
 }
 
-func SignUp(c *gin.Context) {
-
-}
-
 func RefreshToken(c *gin.Context) {
 	refreshToken, _ := CheckRefreshToken(c)
 	if refreshToken == nil {

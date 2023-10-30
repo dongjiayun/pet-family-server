@@ -5,7 +5,6 @@ import (
 	"github.com/google/uuid"
 	"go-pet-family/models"
 	"go-pet-family/utils"
-	"time"
 )
 
 type ArticlesReq struct {
@@ -88,10 +87,9 @@ func syncArticleInfo(article *models.Article, ch chan error) {
 }
 
 func syncArticleInfos(articles *models.Articles, ch chan error) {
-	var cids []string
-	var users models.Users
+	cids := []string{}
 	for _, article := range *articles {
-		cids = append(cids, article.Author.Cid)
+		cids = append(cids, article.ArticleId)
 		var tagIds []string
 		for _, tag := range article.Tags {
 			tagIds = append(tagIds, tag.TagId)
@@ -99,11 +97,9 @@ func syncArticleInfos(articles *models.Articles, ch chan error) {
 		var tags []models.Tag
 		article.Tags = tags
 		models.DB.Where("tag_id in (?)", tagIds).Find(&tags)
-	}
-	models.DB.Where("cid in (?)", cids).Find(&users)
-	for index, article := range *articles {
-		user := models.GetSafeUser(users[index])
-		article.Author = user
+		var user models.User
+		models.DB.Where("cid = ?", article.Author.Cid).First(&user)
+		article.Author = models.GetSafeUser(user)
 	}
 	models.DB.Where("article_id in (?)", cids).Updates(&articles)
 	ch <- nil
@@ -125,9 +121,9 @@ func CreateArticle(c *gin.Context) {
 	uuidStr := uuid.String()
 	article.ArticleId = "Article-" + uuidStr
 
-	article.IsAudit = true
-	article.AuditBy = "C-ADMIN"
-	article.AuditAt = time.Now()
+	ch := make(chan string)
+	go models.CommonCreate[models.Article](&article, ch)
+	<-ch
 
 	db := models.DB.Create(&article)
 	if db.Error != nil {
@@ -166,14 +162,9 @@ func UpdateArticle(c *gin.Context) {
 		Location: requestBody.Location,
 	}
 
-	update.IsAudit = true
-	update.AuditBy = "C-ADMIN"
-	update.AuditAt = time.Now()
-
-	cid, _ := c.Get("cid")
-	var user models.User
-	models.DB.Where("cid = ?", cid.(string)).First(&user)
-	update.UpdateBy = user.Cid
+	ch := make(chan string)
+	go models.CommonUpdate[models.Article](&update, c, ch)
+	<-ch
 
 	updateDb := models.DB.Model(&update).
 		Where("article_id = ?", articleId).
