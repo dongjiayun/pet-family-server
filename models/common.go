@@ -1,9 +1,13 @@
 package models
 
 import (
+	"context"
 	"database/sql/driver"
 	"errors"
 	"github.com/goccy/go-json"
+	"github.com/qiniu/go-sdk/v7/auth/qbox"
+	"github.com/qiniu/go-sdk/v7/storage"
+	"go-pet-family/config"
 	"math"
 	"time"
 )
@@ -14,10 +18,14 @@ type Pagination struct {
 }
 
 type Model struct {
-	Id        uint       `json:"-" gorm:"primary_key"`
-	CreatedAt time.Time  `json:"-" gorm:"autoCreateTime" `
-	UpdatedAt time.Time  `json:"-"`
-	DeletedAt *time.Time `json:"-"`
+	Id        uint      `json:"-" gorm:"primary_key"`
+	CreatedAt time.Time `json:"-" gorm:"autoCreateTime" `
+	UpdatedAt time.Time `json:"-" gorm:"autoUpdateTime" `
+	DeletedAt time.Time `json:"-"`
+	IsAudit   bool      `json:"-"`
+	AuditBy   string    `json:"-" `
+	AuditAt   time.Time `json:"-"`
+	UpdateBy  string    `json:"-" `
 }
 
 type Result struct {
@@ -46,12 +54,12 @@ func maskPhoneNumber(phone string) string {
 
 type File struct {
 	Model
-	FileId   string `json:"file_id" gorm:"index"`
-	FileName string `json:"file_name"`
-	FileUrl  string `json:"file_url"`
-	FileType string `json:"file_type"`
-	FileSize int    `json:"file_size"`
-	FileMd5  string `json:"file_md5"`
+	FileId   string `json:"fileId" gorm:"index"`
+	FileName string `json:"file_Name"`
+	FileUrl  string `json:"fileUrl"`
+	FileType string `json:"fileType"`
+	FileSize int    `json:"fileSize"`
+	FileMd5  string `json:"fileMd5"`
 }
 
 func (file *File) Scan(value interface{}) error {
@@ -78,13 +86,13 @@ func (file File) Value() (driver.Value, error) {
 
 type Location struct {
 	Model
-	LocationId string `json:"location_id" gorm:"index"`
+	LocationId string `json:"locationId" gorm:"index"`
 	Country    string `json:"country"`
 	City       string `json:"city"`
 	Province   string `json:"province"`
 	Area       string `json:"area"`
 	Street     string `json:"street"`
-	StreetNum  string `json:"street_num"`
+	StreetNum  string `json:"streetNum"`
 	Longitude  string `json:"longitude"`
 	Latitude   string `json:"latitude"`
 }
@@ -119,4 +127,40 @@ func GetListData[T interface{}](list []T, pageNo int, pageSize int, totalCount i
 		PageNo:     pageNo,
 		PageSize:   pageSize,
 	}
+}
+
+func GetSystemQiniuToken(bucket string, ch chan error) {
+	redisClient := RedisClient
+	obsToken := redisClient.Get(context.Background(), "qiniu_token")
+	obsTokenValue := obsToken.Val()
+	if obsTokenValue != "" {
+		ch <- nil
+	} else {
+		accessKey := config.ObsAK
+		secretKey := config.ObsSK
+		mac := qbox.NewMac(accessKey, secretKey)
+		if bucket == "" {
+			bucket = config.ObsBucket
+		}
+		putPolicy := storage.PutPolicy{
+			Scope: bucket,
+		}
+		upToken := putPolicy.UploadToken(mac)
+		redisClient.Set(context.Background(), "qiniu_token", upToken, 55*time.Minute)
+		ch <- nil
+	}
+}
+
+func GetObsToken(bucket string, ch chan string) {
+	accessKey := config.ObsAK
+	secretKey := config.ObsSK
+	mac := qbox.NewMac(accessKey, secretKey)
+	if bucket == "" {
+		bucket = config.ObsBucket
+	}
+	putPolicy := storage.PutPolicy{
+		Scope: bucket,
+	}
+	upToken := putPolicy.UploadToken(mac)
+	ch <- upToken
 }

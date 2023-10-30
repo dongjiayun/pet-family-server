@@ -50,11 +50,11 @@ func getUserApi(router *gin.Engine) {
 
 	r.POST("", controllers.CreateUser)
 
-	r.GET("", controllers.GetUsers)
+	r.POST("get", controllers.GetUsers)
 
 	r.GET(":cid", controllers.GetUser)
 
-	r.PUT(":cid", controllers.UpdateUser)
+	r.PUT("", controllers.UpdateUser)
 
 	r.DELETE(":cid", controllers.DeleteUser)
 
@@ -72,13 +72,13 @@ func getArticleApi(router *gin.Engine) {
 
 	r.Use(checkUserExtendInfoMiddleware)
 
-	r.GET("", controllers.GetArticles)
+	r.POST("get", controllers.GetArticles)
 
 	r.GET(":articleId", controllers.GetArticle)
 
 	r.POST("", controllers.CreateArticle)
 
-	r.PUT(":articleId", controllers.UpdateArticle)
+	r.PUT("", controllers.UpdateArticle)
 
 	r.POST("/like/:articleId", controllers.LikeArticle)
 
@@ -96,15 +96,37 @@ func getTagApi(router *gin.Engine) {
 
 	r.Use(checkUserExtendInfoMiddleware)
 
-	r.GET("", controllers.GetTags)
+	r.POST("get", controllers.GetTags)
 
 	r.GET(":tagId", controllers.GetTag)
 
 	r.POST("", controllers.CreateTag)
 
-	r.PUT(":tagId", controllers.UpdateTag)
+	r.PUT("", controllers.UpdateTag)
 
 	r.DELETE(":tagId", controllers.DeleteTag)
+}
+
+func getCommentApi(router *gin.Engine) {
+	r := router.Group("/comment")
+
+	r.Use(checkTokenMiddleware)
+
+	r.POST("get", controllers.GetComments)
+
+	r.GET(":commentId", controllers.GetComment)
+
+	r.POST("", controllers.CreateComment)
+
+	r.PUT("", controllers.UpdateComment)
+}
+
+func getCommonApi(router *gin.Engine) {
+	r := router.Group("/common")
+
+	r.Use(checkTokenMiddleware)
+
+	r.POST("obsToken", controllers.GetObsToken)
 }
 
 func GetRouter() *gin.Engine {
@@ -114,5 +136,7 @@ func GetRouter() *gin.Engine {
 	getUserApi(router)
 	getArticleApi(router)
 	getTagApi(router)
+	getCommentApi(router)
+	getCommonApi(router)
 	return router
 }

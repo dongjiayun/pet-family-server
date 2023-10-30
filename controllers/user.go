@@ -188,7 +188,8 @@ func UpdateUser(c *gin.Context) {
 			return
 		}
 	}
-	db := models.DB.Model(&oldUser).Where("cid = ?", cid).Updates(&user)
+	var newUser models.User
+	db := models.DB.Model(&oldUser).Where("cid = ?", cid).Updates(&newUser)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
@@ -196,14 +197,14 @@ func UpdateUser(c *gin.Context) {
 	}
 	resultUser := models.User{
 		Cid:      oldUser.Cid,
-		Email:    user.Email,
-		Phone:    user.Phone,
-		Avatar:   user.Avatar,
-		Age:      user.Age,
-		Username: user.Username,
-		Gender:   user.Gender,
-		Birthday: user.Birthday,
-		Role:     user.Role,
+		Email:    newUser.Email,
+		Phone:    newUser.Phone,
+		Avatar:   newUser.Avatar,
+		Age:      newUser.Age,
+		Username: newUser.Username,
+		Gender:   newUser.Gender,
+		Birthday: newUser.Birthday,
+		Role:     newUser.Role,
 	}
 	ch := make(chan string)
 	go CheckAndCreateExtendUserInfo(c, resultUser.Cid, ch)

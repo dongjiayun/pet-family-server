@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"go-pet-family/models"
 	"go-pet-family/utils"
+	"time"
 )
 
 type ArticlesReq struct {
@@ -26,16 +27,11 @@ func GetArticles(c *gin.Context) {
 	}
 	pageNo := articlesReq.PageNo
 	pageSize := articlesReq.PageSize
-	var articles []models.Article
+	var articles models.Articles
 	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Find(&articles)
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 0, Message: "success"})
-			return
-		}
-		// SQL执行失败，返回错误信息
-		if db.Error.Error() == "record not found" {
-			c.JSON(200, models.Result{Code: 0, Message: "success", Data: articles})
 			return
 		}
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
@@ -43,9 +39,9 @@ func GetArticles(c *gin.Context) {
 	}
 
 	if articlesReq.Sync {
-		for _, article := range articles {
-			syncArticleInfo(&article)
-		}
+		ch := make(chan error)
+		go syncArticleInfos(&articles, ch)
+		<-ch
 	}
 
 	var count int64
@@ -69,11 +65,13 @@ func GetArticle(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	syncArticleInfo(&article)
+	ch := make(chan error)
+	go syncArticleInfo(&article, ch)
+	<-ch
 	c.JSON(200, models.Result{0, "success", article})
 }
 
-func syncArticleInfo(article *models.Article) {
+func syncArticleInfo(article *models.Article, ch chan error) {
 	cid := article.Author.Cid
 	var author models.User
 	models.DB.Where("cid = ?", cid).First(&author)
@@ -86,6 +84,29 @@ func syncArticleInfo(article *models.Article) {
 	models.DB.Where("tag_id in (?)", tagIds).Find(&tags)
 	article.Tags = tags
 	models.DB.Model(&article).Where("article_id = ?", article.ArticleId).Updates(&article)
+	<-ch
+}
+
+func syncArticleInfos(articles *models.Articles, ch chan error) {
+	var cids []string
+	var users models.Users
+	for _, article := range *articles {
+		cids = append(cids, article.Author.Cid)
+		var tagIds []string
+		for _, tag := range article.Tags {
+			tagIds = append(tagIds, tag.TagId)
+		}
+		var tags []models.Tag
+		article.Tags = tags
+		models.DB.Where("tag_id in (?)", tagIds).Find(&tags)
+	}
+	models.DB.Where("cid in (?)", cids).Find(&users)
+	for index, article := range *articles {
+		user := models.GetSafeUser(users[index])
+		article.Author = user
+	}
+	models.DB.Where("article_id in (?)", cids).Updates(&articles)
+	ch <- nil
 }
 
 func CreateArticle(c *gin.Context) {
@@ -104,6 +125,10 @@ func CreateArticle(c *gin.Context) {
 	uuidStr := uuid.String()
 	article.ArticleId = "Article-" + uuidStr
 
+	article.IsAudit = true
+	article.AuditBy = "C-ADMIN"
+	article.AuditAt = time.Now()
+
 	db := models.DB.Create(&article)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
@@ -114,21 +139,51 @@ func CreateArticle(c *gin.Context) {
 }
 
 func UpdateArticle(c *gin.Context) {
-	articleId := c.Param("articleId")
-	var article models.Article
-	err := c.ShouldBindJSON(&article)
+	var requestBody models.Article
+	err := c.ShouldBindJSON(&requestBody)
+	articleId := requestBody.ArticleId
 	if err != nil {
 		c.JSON(200, models.Result{Code: 10001, Message: err.Error()})
 		return
 	}
-	db := models.DB.Model(&article).
-		Where("article_id = ?", articleId).
-		Updates(&article)
+	article := models.Article{}
+	db := models.DB.Where("article_id = ?", articleId).Where("deleted_at IS NULL").First(&article)
 	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 10001, Message: "未找到该条记录"})
+			return
+		}
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+
+	update := models.Article{
+		Title:    requestBody.Title,
+		Content:  requestBody.Content,
+		Covers:   requestBody.Covers,
+		Tags:     requestBody.Tags,
+		Location: requestBody.Location,
+	}
+
+	update.IsAudit = true
+	update.AuditBy = "C-ADMIN"
+	update.AuditAt = time.Now()
+
+	cid, _ := c.Get("cid")
+	var user models.User
+	models.DB.Where("cid = ?", cid.(string)).First(&user)
+	update.UpdateBy = user.Cid
+
+	updateDb := models.DB.Model(&update).
+		Where("article_id = ?", articleId).
+		Updates(&update)
+	if updateDb.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+
 	c.JSON(200, models.Result{0, "success", article.ArticleId})
 }
 

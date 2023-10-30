@@ -14,14 +14,13 @@ type Tag struct {
 
 type Comment struct {
 	Model
-	CommentId   string   `json:"comment_id" gorm:"index"`
-	Content     string   `json:"content"`
-	Author      User     `json:"author" gorm:"foreignKey:Cid;type:varchar(255)"`
-	Location    Location `json:"location" gorm:"foreignKey:LocationId;type:varchar(255)"`
-	Likes       []User   `json:"likes" gorm:"foreignKey:Cid;type:varchar(255)"`
-	Target      string   `json:"target"`
-	TargetId    string   `json:"targetId"`
-	Attachments []File   `json:"attachments" gorm:"foreignKey:FileId;type:varchar(255)"`
+	CommentId   string     `json:"commentId" gorm:"index"`
+	Content     string     `json:"content" binding:"required"`
+	Author      SafeUser   `json:"author"  gorm:"foreignKey:Cid;type:varchar(255)"`
+	Location    Location   `json:"location" gorm:"foreignKey:LocationId;type:varchar(255)"`
+	Likes       []SafeUser `json:"likes" gorm:"foreignKey:Cid;type:varchar(255)"`
+	TargetId    string     `json:"targetId" binding:"required"`
+	Attachments []File     `json:"attachments" gorm:"foreignKey:FileId;type:varchar(255)"`
 }
 
 type Tags []Tag
@@ -122,7 +121,7 @@ func (articles Articles) Value() (driver.Value, error) {
 
 type Article struct {
 	Model
-	ArticleId     string    `json:"article_id" gorm:"index"`
+	ArticleId     string    `json:"articleId" gorm:"index"`
 	Title         string    `json:"title" binding:"required"`
 	Content       string    `json:"content" binding:"required"`
 	Author        SafeUser  `json:"author" gorm:"type:json"`
@@ -135,5 +134,4 @@ type Article struct {
 	ColllectCount int       `json:"collectCount"`
 	Comments      Comments  `json:"comments" gorm:"type:json"`
 	CommentCount  int       `json:"commentCount"`
-	UpdateBy      SafeUser  `json:"-" gorm:"type:json"`
 }
