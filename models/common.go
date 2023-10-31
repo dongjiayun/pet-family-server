@@ -232,3 +232,43 @@ func CommonUpdate[T interface{}](t *T, c *gin.Context, ch chan string) {
 	}
 	ch <- "success"
 }
+
+func SetIntoMysqlAndRedis[T interface{}](t *T, key string, ch chan string, expireTime time.Duration) {
+	redisClient := RedisClient
+	v := reflect.ValueOf(t).Elem()
+	id := v.FieldByName(key).String()
+	redisKey := key + id
+	jsonString, _ := json.Marshal(t)
+	redisClient.Set(context.Background(), redisKey, jsonString, expireTime)
+	db := DB.Where(key+" = ?", id).First(t)
+	var hasRecord bool
+	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			hasRecord = false
+		}
+	}
+	if !hasRecord {
+		DB.Create(&t)
+	} else {
+		DB.Model(t).Where(key+" = ?", id).Updates(&t)
+	}
+	ch <- "success"
+}
+
+func GetFromMysqlAndRedis[T interface{}](t *T, key string, ch chan string) {
+	redisClient := RedisClient
+	v := reflect.ValueOf(t).Elem()
+	id := v.FieldByName(key).String()
+	redisKey := key + id
+	jsonString, _ := redisClient.Get(context.Background(), redisKey).Result()
+	if jsonString != "" {
+		json.Unmarshal([]byte(jsonString), &t)
+		ch <- "success"
+	} else {
+		db := DB.Where(key+" = ?", id).First(t)
+		if db.Error != nil {
+			ch <- db.Error.Error()
+		}
+		ch <- "success"
+	}
+}
