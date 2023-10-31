@@ -36,7 +36,7 @@ func GetComments(c *gin.Context) {
 
 	var comments models.Comments
 
-	db := models.DB.Debug().Where("target_id = ?", targetId).Where("deleted_at IS NULL").Limit(pageSize).Offset((pageNo - 1) * pageSize).Find(&comments)
+	db := models.DB.Where("target_id = ?", targetId).Order("id desc").Where("deleted_at IS NULL").Limit(pageSize).Offset((pageNo - 1) * pageSize).Find(&comments)
 
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
@@ -137,9 +137,7 @@ func CreateComment(c *gin.Context) {
 	uuidStr := uuid.String()
 	comment.CommentId = "Comment-" + uuidStr
 
-	ch := make(chan string)
-	go models.CommonCreate[models.Comment](&comment, ch)
-	<-ch
+	models.CommonCreate[models.Comment](&comment)
 
 	db := models.DB.Create(&comment)
 	if db.Error != nil {

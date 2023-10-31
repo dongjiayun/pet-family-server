@@ -21,7 +21,7 @@ func GetTags(c *gin.Context) {
 	pageNo := pagination.PageNo
 	pageSize := pagination.PageSize
 	var tags []models.Tag
-	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Where("deleted_at IS NULL").Find(&tags)
+	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Order("id desc").Where("deleted_at IS NULL").Find(&tags)
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 0, Message: "success"})
@@ -64,9 +64,7 @@ func CreateTag(c *gin.Context) {
 	uuidSring := newUUID.String()
 	tag.TagId = "Tag-" + uuidSring
 
-	ch := make(chan string)
-	go models.CommonCreate[models.Tag](&tag, ch)
-	<-ch
+	go models.CommonCreate[models.Tag](&tag)
 
 	db := models.DB.Create(&tag)
 

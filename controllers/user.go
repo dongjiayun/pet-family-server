@@ -23,7 +23,7 @@ func GetUsers(c *gin.Context) {
 	pageNo := pagination.PageNo
 	pageSize := pagination.PageSize
 	var users models.Users
-	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Where("deleted_at IS NULL").Find(&users)
+	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Order("id desc").Where("deleted_at IS NULL").Find(&users)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
@@ -39,7 +39,7 @@ func GetUsers(c *gin.Context) {
 func GetUser(c *gin.Context) {
 	cid := c.Param("cid")
 	var userDetail models.UserDetail
-	db := models.DB.Debug().Table("user").
+	db := models.DB.Table("user").
 		Select("*").
 		Joins("LEFT JOIN user_extend_infos uei ON uei.cid = user.cid").
 		Where("user.cid = ?", cid).
@@ -96,10 +96,6 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	ch := make(chan string)
-	go CheckAndCreateExtendUserInfo(c, user.Cid, ch)
-	<-ch
-
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(user)})
 }
 
@@ -127,9 +123,6 @@ func CreateByEmail(ch chan string, c *gin.Context, email string) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	chUE := make(chan string)
-	go CheckAndCreateExtendUserInfo(c, user.Cid, ch)
-	<-chUE
 	ch <- "success"
 }
 
@@ -211,9 +204,6 @@ func UpdateUser(c *gin.Context) {
 	go models.CommonUpdate[models.User](&resultUser, c, updateCh)
 	<-updateCh
 
-	syncExtendInfo := make(chan string)
-	go CheckAndCreateExtendUserInfo(c, resultUser.Cid, syncExtendInfo)
-	<-syncExtendInfo
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(resultUser)})
 }
 

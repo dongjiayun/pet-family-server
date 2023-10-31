@@ -22,9 +22,9 @@ type Pagination struct {
 
 type Model struct {
 	Id        uint      `json:"-" gorm:"primary_key"`
-	CreatedAt time.Time `json:"-" gorm:"autoCreateTime" `
-	UpdatedAt time.Time `json:"-" gorm:"autoUpdateTime" `
-	DeletedAt time.Time `json:"-"`
+	CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime" `
+	UpdatedAt time.Time `json:"updatedAt" gorm:"autoUpdateTime" `
+	DeletedAt time.Time `json:"-" gorm:"default:null"`
 	IsAudit   bool      `json:"-"`
 	AuditBy   string    `json:"-" gorm:"type:varchar(255)"`
 	AuditAt   time.Time `json:"-"`
@@ -168,7 +168,7 @@ func GetObsToken(bucket string, ch chan string) {
 	ch <- upToken
 }
 
-func CommonCreate[T interface{}](t *T, ch chan string) {
+func CommonCreate[T interface{}](t *T) {
 	value := reflect.ValueOf(t).Elem()
 	typ := reflect.TypeOf(t).Elem()
 	// 确保t包含Model类型的字段
@@ -192,8 +192,6 @@ func CommonCreate[T interface{}](t *T, ch chan string) {
 	if auditAtField.IsValid() && auditAtField.CanSet() {
 		auditAtField.Set(reflect.ValueOf(time.Now()))
 	}
-
-	ch <- "success"
 }
 
 func CommonUpdate[T interface{}](t *T, c *gin.Context, ch chan string) {

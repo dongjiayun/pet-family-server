@@ -8,7 +8,8 @@ type Notice struct {
 	Content    string `json:"content" binding:"required"`
 	NoticeType string `json:"noticeType" binding:"required"`
 	NoticeCode string `json:"noticeCode" binding:"required"`
-	Owner      string `json:"owner"`
+	TargetCid  string `json:"targetCid"`
+	IsReaded   bool   `json:"isReaded"`
 }
 
 type Notices []Notice

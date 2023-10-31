@@ -48,9 +48,7 @@ func getUserApi(router *gin.Engine) {
 
 	r.Use(checkTokenMiddleware)
 
-	r.POST("", controllers.CreateUser)
-
-	r.POST("get", controllers.GetUsers)
+	r.Use(checkUserExtendInfoMiddleware)
 
 	r.GET(":cid", controllers.GetUser)
 
@@ -63,6 +61,11 @@ func getUserApi(router *gin.Engine) {
 	r.POST("/follow/:cid", controllers.FollowUser)
 
 	r.DELETE("/follow/:cid", controllers.UnFollowUser)
+
+	r.POST("", controllers.CreateUser)
+
+	r.POST("get", controllers.GetUsers)
+
 }
 
 func getArticleApi(router *gin.Engine) {

@@ -27,7 +27,7 @@ func GetArticles(c *gin.Context) {
 	pageNo := articlesReq.PageNo
 	pageSize := articlesReq.PageSize
 	var articles models.Articles
-	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Find(&articles)
+	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Where("deleted_at IS NULL").Order("id desc").Find(&articles)
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 0, Message: "success"})
@@ -121,9 +121,7 @@ func CreateArticle(c *gin.Context) {
 	uuidStr := uuid.String()
 	article.ArticleId = "Article-" + uuidStr
 
-	ch := make(chan string)
-	go models.CommonCreate[models.Article](&article, ch)
-	<-ch
+	models.CommonCreate[models.Article](&article)
 
 	db := models.DB.Create(&article)
 	if db.Error != nil {
@@ -131,6 +129,7 @@ func CreateArticle(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+	SendArticleMessageToAllFollows(&article, c)
 	c.JSON(200, models.Result{0, "success", article.ArticleId})
 }
 

@@ -20,6 +20,7 @@ type Comment struct {
 	Location    Location   `json:"location" gorm:"type:varchar(255)"`
 	Likes       []SafeUser `json:"likes" gorm:"type:varchar(255)"`
 	TargetId    string     `json:"targetId" binding:"required"`
+	TargetName  string     `json:"targetName" binding:"required"`
 	Attachments []File     `json:"attachments" gorm:"type:varchar(255)"`
 }
 
