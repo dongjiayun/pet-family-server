@@ -297,7 +297,25 @@ func FollowUser(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(user)})
+
+	var self models.User
+	models.DB.Where("cid = ?", cid).First(&self)
+	safeSelfUser := models.GetSafeUser(self)
+
+	var targetExtendInfo models.UserExtendInfo
+	models.DB.Where("cid = ?", targetCid).First(&targetExtendInfo)
+
+	targetExtendInfo.Followers = append(targetExtendInfo.Followers, safeSelfUser)
+
+	updateTargetDb := models.DB.Model(&targetExtendInfo).Where("cid = ?", targetCid).Update("followers", targetExtendInfo.Followers)
+
+	if updateTargetDb.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+
+	c.JSON(200, models.Result{Code: 0, Message: "success", Data: user.Cid})
 }
 
 func UnFollowUser(c *gin.Context) {
@@ -336,5 +354,21 @@ func UnFollowUser(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+
+	var targetExtendInfo models.UserExtendInfo
+	models.DB.Where("cid = ?", targetCid).First(&targetExtendInfo)
+
+	targetExtendInfo.Followers = utils.ArrayFilter[models.SafeUser](targetExtendInfo.Followers, func(item models.SafeUser) bool {
+		return item.Cid != cid
+	})
+
+	updateTargetDb := models.DB.Model(&targetExtendInfo).Where("cid = ?", targetCid).Update("followers", targetExtendInfo.Followers)
+
+	if updateTargetDb.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: nil})
 }

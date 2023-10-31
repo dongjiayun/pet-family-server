@@ -30,6 +30,7 @@ type UserExtendInfo struct {
 	LikeComments Comments  `json:"likesComments" gorm:"type:json"`
 	Collects     Articles  `json:"collects" gorm:"type:json"`
 	Follows      SafeUsers `json:"follows" gorm:"type:json"`
+	Followers    SafeUsers `json:"followers" gorm:"type:json"`
 }
 
 type Users []User

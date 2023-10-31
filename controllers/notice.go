@@ -40,3 +40,9 @@ func GetNotices(c *gin.Context) {
 
 	c.JSON(200, models.Result{0, "success", list})
 }
+
+func SendArticleMessageToAllFollows(article *models.Article) {
+	var users models.Users
+	authorCid := article.Author.Cid
+	models.DB.Table("user_extend_infos").Where("cid = ?", authorCid).Find(&users)
+}

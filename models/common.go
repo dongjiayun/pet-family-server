@@ -233,11 +233,11 @@ func CommonUpdate[T interface{}](t *T, c *gin.Context, ch chan string) {
 	ch <- "success"
 }
 
-func SetIntoMysqlAndRedis[T interface{}](t *T, key string, ch chan string, expireTime time.Duration) {
+func SetIntoDbAndRedis[T interface{}](t *T, key string, ch chan string, expireTime time.Duration) {
 	redisClient := RedisClient
 	v := reflect.ValueOf(t).Elem()
 	id := v.FieldByName(key).String()
-	redisKey := key + id
+	redisKey := "db_" + key + "_" + id
 	jsonString, _ := json.Marshal(t)
 	redisClient.Set(context.Background(), redisKey, jsonString, expireTime)
 	db := DB.Where(key+" = ?", id).First(t)
@@ -255,11 +255,11 @@ func SetIntoMysqlAndRedis[T interface{}](t *T, key string, ch chan string, expir
 	ch <- "success"
 }
 
-func GetFromMysqlAndRedis[T interface{}](t *T, key string, ch chan string) {
+func GetFromDbAndRedis[T interface{}](t *T, key string, ch chan string) {
 	redisClient := RedisClient
 	v := reflect.ValueOf(t).Elem()
 	id := v.FieldByName(key).String()
-	redisKey := key + id
+	redisKey := "db_" + key + "_" + id
 	jsonString, _ := redisClient.Get(context.Background(), redisKey).Result()
 	if jsonString != "" {
 		json.Unmarshal([]byte(jsonString), &t)
