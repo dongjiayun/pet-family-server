@@ -217,6 +217,13 @@ func LikeArticle(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+
+	title := "您有新的点赞"
+	content := "您的文章" + article.Title + "被点赞了"
+	noticeType := "likeArticle"
+	noticeId := article.ArticleId
+	SendMessage(title, content, noticeType, noticeId, &user, article.Author.Cid, c)
+
 	c.JSON(200, models.Result{0, "success", nil})
 }
 
@@ -308,6 +315,13 @@ func CollectArticle(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+
+	title := "您有新的收藏"
+	content := "您的文章" + article.Title + "被收藏了"
+	noticeType := "collectArticle"
+	noticeId := article.ArticleId
+	SendMessage(title, content, noticeType, noticeId, &user, article.Author.Cid, c)
+
 	c.JSON(200, models.Result{0, "success", nil})
 }
 

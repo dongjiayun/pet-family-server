@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go-pet-family/models"
@@ -35,11 +36,45 @@ func GetNotices(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 	}
 	var count int64
-	models.DB.Model(&notices).Count(&count)
+	models.DB.Model(&notices).Where("owner = ?", cid).Where("deleted_at IS NULL").Count(&count)
+
+	fmt.Println(notices)
 
 	list := models.GetListData[models.Notice](notices, pageNo, pageSize, count)
 
 	c.JSON(200, models.Result{0, "success", list})
+}
+
+func ReadNotice(c *gin.Context) {
+	noticeId := c.Param("noticeId")
+	cid, _ := c.Get("cid")
+	var notice models.Notice
+	db := models.DB.Where("notice_id = ?", noticeId).Where("owner = ?", cid).First(&notice)
+	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 0, Message: "success"})
+			return
+		}
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+	}
+	readDb := models.DB.Model(&notice).Where("notice_id = ?", noticeId).Update("is_readed", true)
+	if readDb.Error != nil {
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+	}
+	c.JSON(200, models.Result{0, "success", nil})
+}
+
+func ReadAllNotices(c *gin.Context) {
+	var notices models.Notices
+	cid, _ := c.Get("cid")
+	models.DB.Where("owner = ?", cid).Where("deleted_at IS NULL AND is_readed = ?", false).Limit(20).Offset(0).Order("id desc").Order("id desc").Find(&notices)
+	for _, notice := range notices {
+		readDb := models.DB.Model(&notice).Where("notice_id = ?", notice.NoticeId).Update("is_readed", true)
+		if readDb.Error != nil {
+			c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		}
+	}
+	c.JSON(200, models.Result{0, "success", nil})
 }
 
 func SendArticleMessageToAllFollows(article *models.Article, c *gin.Context) {
@@ -71,13 +106,27 @@ func SendArticleMessageToAllFollows(article *models.Article, c *gin.Context) {
 	}
 }
 
-func SendFollowMessageToAuthor(user *models.User, c *gin.Context) {
+func SendMessage(title string, content string, noticeType string, noticeCode string, user *models.User, targetCid string, c *gin.Context) {
 	var notice models.Notice
-	notice.NoticeType = "follow"
-	notice.NoticeCode = user.Cid
-	notice.Title = "您关注的" + user.Username + "发表了一篇文章"
-	notice.Content = "您关注的" + user.Username + "发表了一篇文章"
+	if user == nil {
+		cid, _ := c.Get("cid")
+		models.DB.Where("cid = ?", cid).Find(&user)
+	}
+	notice.NoticeType = noticeType
+	notice.NoticeCode = noticeCode
+	notice.Title = title
+	notice.Content = content
 	notice.Avatar = user.Avatar
-	notice.TargetCid = user.Cid
+	notice.TargetCid = targetCid
 
+	uuid := uuid.New()
+	uuidStr := uuid.String()
+	notice.NoticeId = "notice-" + uuidStr
+
+	models.CommonCreate[models.Notice](&notice)
+
+	db := models.DB.Create(&notice)
+	if db.Error != nil {
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+	}
 }

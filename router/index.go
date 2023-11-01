@@ -132,6 +132,10 @@ func getNoticeApi(router *gin.Engine) {
 	r.Use(checkTokenMiddleware)
 
 	r.POST("get", controllers.GetNotices)
+
+	r.PUT("/:noticeId", controllers.ReadNotice)
+
+	r.PUT("/readAll", controllers.ReadAllNotices)
 }
 
 func getCommonApi(router *gin.Engine) {
@@ -150,6 +154,7 @@ func GetRouter() *gin.Engine {
 	getArticleApi(router)
 	getTagApi(router)
 	getCommentApi(router)
+	getNoticeApi(router)
 	getCommonApi(router)
 	return router
 }

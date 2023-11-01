@@ -305,6 +305,13 @@ func FollowUser(c *gin.Context) {
 		return
 	}
 
+	title := "您有一个新粉丝"
+	content := self.Username + "关注了你"
+	noticeType := "follow"
+	noticeCode := self.Cid
+
+	SendMessage(title, content, noticeType, noticeCode, &self, user.Cid, c)
+
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: user.Cid})
 }
 

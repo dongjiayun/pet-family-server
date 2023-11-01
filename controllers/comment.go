@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go-pet-family/models"
+	"strings"
 	"time"
 )
 
@@ -145,6 +146,26 @@ func CreateComment(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+
+	var title string
+	var targetUserId string
+
+	isArticle := strings.Contains(comment.TargetId, "Article")
+	var user models.User
+	models.DB.Where("cid = ?", cid).First(&user)
+	if isArticle {
+		title = user.Username + "评论了你的文章"
+		var article models.Article
+		models.DB.Where("article_id = ?", comment.TargetId).First(&article)
+		targetUserId = article.Author.Cid
+	} else {
+		title = user.Username + "评论了你的评论"
+		var targetComment models.Comment
+		models.DB.Where("comment_id = ?", comment.TargetId).First(&targetComment)
+		targetUserId = targetComment.Author.Cid
+	}
+
+	SendMessage(title, comment.Content, "comment", comment.CommentId, &user, targetUserId, c)
 
 	c.JSON(200, models.Result{0, "success", comment.CommentId})
 }
