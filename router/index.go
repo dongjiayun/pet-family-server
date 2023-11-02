@@ -71,13 +71,13 @@ func getUserApi(router *gin.Engine) {
 func getArticleApi(router *gin.Engine) {
 	r := router.Group("/article")
 
-	r.Use(checkTokenMiddleware)
-
 	r.Use(checkUserExtendInfoMiddleware)
 
 	r.POST("get", controllers.GetArticles)
 
 	r.GET(":articleId", controllers.GetArticle)
+
+	r.Use(checkTokenMiddleware)
 
 	r.POST("", controllers.CreateArticle)
 
@@ -90,6 +90,8 @@ func getArticleApi(router *gin.Engine) {
 	r.POST("/collect/:articleId", controllers.CollectArticle)
 
 	r.DELETE("/collect/:articleId", controllers.CancelCollectArticle)
+
+	r.GET("/checkLikeAndCollect/:articleId", controllers.CheckLikeAndCollect)
 }
 
 func getTagApi(router *gin.Engine) {
@@ -141,9 +143,11 @@ func getNoticeApi(router *gin.Engine) {
 func getCommonApi(router *gin.Engine) {
 	r := router.Group("/common")
 
-	r.Use(checkTokenMiddleware)
+	r.GET("getAllArea", controllers.GetAllArea)
 
 	r.POST("obsToken", controllers.GetObsToken)
+
+	r.Use(checkTokenMiddleware)
 }
 
 func GetRouter() *gin.Engine {

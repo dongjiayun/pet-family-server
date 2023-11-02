@@ -32,8 +32,8 @@ type Model struct {
 }
 
 type Result struct {
-	Code    int    `json:"code"`
-	Message string `json:"msg"`
+	Code    int    `json:"status"`
+	Message string `json:"message"`
 	Data    any    `json:"data,omitempty" `
 }
 

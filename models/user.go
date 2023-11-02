@@ -13,6 +13,7 @@ type User struct {
 	Email     string `json:"email" binding:"email" msg:"请输入正确的邮箱地址" gorm:"index"`
 	Phone     string `json:"phone" binding:"phone" msg:"请输入正确的手机号" gorm:"index"`
 	Cid       string `json:"cid" gorm:"index"`
+	UnionId   string `json:"unionId" gorm:"index"`
 	IsDeleted bool   `json:"-"`
 	Gender    string `json:"gender"`
 	Birthday  string `json:"birthday"`

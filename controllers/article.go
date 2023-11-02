@@ -65,25 +65,44 @@ func GetArticle(c *gin.Context) {
 		return
 	}
 	ch := make(chan error)
-	go syncArticleInfo(&article, ch)
+	go syncArticleInfo(&article, ch, c)
 	<-ch
 	c.JSON(200, models.Result{0, "success", article})
 }
 
-func syncArticleInfo(article *models.Article, ch chan error) {
+func syncArticleInfo(article *models.Article, ch chan error, c *gin.Context) {
 	cid := article.Author.Cid
 	var author models.User
-	models.DB.Where("cid = ?", cid).First(&author)
+	db := models.DB.Where("cid = ?", cid).First(&author)
+	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 0, Message: "success"})
+			return
+		}
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
 	article.Author = models.GetSafeUser(author)
 	var tagIds []string
 	for _, tag := range article.Tags {
 		tagIds = append(tagIds, tag.TagId)
 	}
 	var tags []models.Tag
-	models.DB.Where("tag_id in (?)", tagIds).Find(&tags)
+	tagsDb := models.DB.Where("tag_id in (?)", tagIds).Find(&tags)
+	if tagsDb.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
 	article.Tags = tags
-	models.DB.Model(&article).Where("article_id = ?", article.ArticleId).Updates(&article)
-	<-ch
+	updateDb := models.DB.Model(&article).Where("article_id = ?", article.ArticleId).Updates(&article)
+	if updateDb.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	ch <- nil
 }
 
 func syncArticleInfos(articles *models.Articles, ch chan error) {
@@ -370,4 +389,22 @@ func CancelCollectArticle(c *gin.Context) {
 		return
 	}
 	c.JSON(200, models.Result{0, "success", nil})
+}
+
+func CheckLikeAndCollect(c *gin.Context) {
+	cid, _ := c.Get("cid")
+	articleId := c.Param("articleId")
+	var userExtendInfo models.UserExtendInfo
+	models.DB.Where("cid = ?", cid.(string)).First(&userExtendInfo)
+	isLike := utils.ArrayIncludes[models.Article](userExtendInfo.LikeArticles, articleId, func(item models.Article) any {
+		return item.ArticleId
+	})
+	isCollect := utils.ArrayIncludes[models.Article](userExtendInfo.Collects, articleId, func(item models.Article) any {
+		return item.ArticleId
+	})
+	type Result struct {
+		IsLike    bool `json:"isLike"`
+		IsCollect bool `json:"isCollect"`
+	}
+	c.JSON(200, models.Result{Code: 0, Message: "success", Data: Result{IsLike: isLike, IsCollect: isCollect}})
 }

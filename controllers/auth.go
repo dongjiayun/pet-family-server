@@ -65,6 +65,11 @@ func SignIn(c *gin.Context) {
 				return
 			}
 
+			if user.Ticket == "" {
+				c.JSON(200, models.Result{Code: 10001, Message: "ticket不能为空"})
+				return
+			}
+
 			optCache := models.RedisClient.Get(context.Background(), user.Email)
 
 			if optCache.Val() != "" {
@@ -143,13 +148,13 @@ func generateToken(c *gin.Context, account string, loginType string) {
 	redisClient.Del(context.Background(), account)
 
 	type Result struct {
-		models.User
+		models.SafeUser
 		Token        string `json:"token"`
 		RefreshToken string `json:"refreshToken"`
 	}
 
 	result := Result{
-		User:         resultUser,
+		SafeUser:     models.GetSafeUser(resultUser),
 		Token:        token,
 		RefreshToken: refreshToken,
 	}
@@ -231,7 +236,7 @@ func SendEmailOtp(c *gin.Context) {
 
 	redisClient := models.RedisClient
 
-	msg := redisClient.Set(context.Background(), otpCode.Email, authOtpJSON, 5*time.Minute)
+	msg := redisClient.Set(context.Background(), otpCode.Email, authOtpJSON, 1*time.Minute)
 
 	if msg != nil {
 		fmt.Println(msg)
