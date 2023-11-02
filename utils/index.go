@@ -38,3 +38,8 @@ func ArrayFilter[T any](arr []T, fn func(T) bool) []T {
 	}
 	return result
 }
+func ArrayForeach[T any](arr *[]T, fn func(T) T) {
+	for index, v := range *arr {
+		(*arr)[index] = fn(v)
+	}
+}

@@ -37,6 +37,13 @@ func GetArticles(c *gin.Context) {
 		return
 	}
 
+	utils.ArrayForeach[models.Article]((*[]models.Article)(&articles), func(article models.Article) models.Article {
+		article.ColllectCount = len(article.Collects)
+		article.CommentCount = len(article.Comments)
+		article.LikesCount = len(article.Likes)
+		return article
+	})
+
 	if articlesReq.Sync {
 		ch := make(chan error)
 		go syncArticleInfos(&articles, ch)
@@ -67,6 +74,11 @@ func GetArticle(c *gin.Context) {
 	ch := make(chan error)
 	go syncArticleInfo(&article, ch, c)
 	<-ch
+
+	article.ColllectCount = len(article.Collects)
+	article.CommentCount = len(article.Comments)
+	article.LikesCount = len(article.Likes)
+
 	c.JSON(200, models.Result{0, "success", article})
 }
 
