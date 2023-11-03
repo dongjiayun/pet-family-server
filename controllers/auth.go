@@ -12,8 +12,10 @@ import (
 	"go-pet-family/config"
 	"go-pet-family/models"
 	"go-pet-family/utils"
+	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -120,11 +122,69 @@ func SignIn(c *gin.Context) {
 		} else {
 			c.JSON(200, models.Result{Code: 10001, Message: "邮箱不存在"})
 		}
-	}
+	case "wechat":
+		client := &http.Client{}
 
-	if user.Email == "" && user.Password == "" {
-		c.JSON(200, models.Result{Code: 10001, Message: "邮箱或手机号不能为空"})
-		return
+		appid := config.MiniprogramAppid
+
+		secret := config.MiniprogramSecret
+
+		js_code := user.JsCode
+
+		params := url.Values{}
+		params.Set("appid", appid)
+		params.Set("secret", secret)
+		params.Set("js_code", js_code)
+		params.Set("grant_type", "authorization_code")
+
+		queryString := params.Encode()
+
+		req, err := http.NewRequest("GET", "https://api.weixin.qq.com/sns/jscode2session?"+queryString, nil)
+
+		req.Header.Add("Content-Type", "application/json")
+
+		if err != nil {
+			c.JSON(200, models.Result{Code: 10001, Message: "internal server error"})
+			return
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			c.JSON(200, models.Result{Code: 10001, Message: "internal server error"})
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(200, models.Result{Code: 10001, Message: "internal server error"})
+			return
+		}
+
+		type Resp struct {
+			Openid     string `json:"openid"`
+			SessionKey string `json:"session_key"`
+			Unionid    string `json:"unionid"`
+		}
+
+		var data Resp
+
+		err = json.Unmarshal(body, &data)
+
+		openId := data.Openid
+		unionId := data.Unionid
+
+		openidExists := checkOpenidExists(openId)
+
+		if openidExists {
+			generateToken(c, openId, "wechat")
+		} else {
+			ch := make(chan string)
+			go CreateByOpenid(ch, c, openId, unionId)
+			result := <-ch
+			if result == "success" {
+				generateToken(c, openId, "wechat")
+			}
+		}
 	}
 }
 
@@ -137,15 +197,17 @@ func generateToken(c *gin.Context, account string, loginType string) {
 			// SQL执行失败，返回错误信息
 			c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		}
+	} else if loginType == "wechat" {
+		db := models.DB.Model(&resultUser).Where("openid = ?", account).First(&resultUser)
+		if db.Error != nil {
+			// SQL执行失败，返回错误信息
+			c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		}
 	}
 
 	token, _ := GenToken(resultUser.Cid, loginType)
 
 	refreshToken, _ := GenRefreshToken(resultUser.Cid, loginType)
-
-	redisClient := models.RedisClient
-
-	redisClient.Del(context.Background(), account)
 
 	type Result struct {
 		models.SafeUser

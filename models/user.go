@@ -13,7 +13,8 @@ type User struct {
 	Email     string `json:"email" binding:"email" msg:"请输入正确的邮箱地址" gorm:"index"`
 	Phone     string `json:"phone" binding:"phone" msg:"请输入正确的手机号" gorm:"index"`
 	Cid       string `json:"cid" gorm:"index"`
-	UnionId   string `json:"unionId" gorm:"index"`
+	Unionid   string `json:"unionid" gorm:"index"`
+	Openid    string `json:"openid" gorm:"index"`
 	IsDeleted bool   `json:"-"`
 	Gender    string `json:"gender"`
 	Birthday  string `json:"birthday"`
@@ -137,15 +138,15 @@ func GetSafeUsers(users []User) []SafeUser {
 }
 
 type UpdateUserFields struct {
-	Cid      string `json:"cid"`
-	Username string `json:"username"`
-	Email    string `json:"email" binding:"email" msg:"请输入正确的邮箱地址" gorm:"index"`
-	Phone    string `json:"phone" binding:"phone" msg:"请输入正确的手机号" gorm:"index"`
-	Gender   string `json:"gender"`
-	Birthday string `json:"birthday"`
-	Avatar   File   `json:"avatar" gorm:"foreignKey:FileId;type:varchar(255)"`
-	Age      int    `json:"age"`
-	Role     string `json:"role"`
+	Cid      string  `json:"cid" binding:"required"`
+	Username *string `json:"username"`
+	Email    *string `json:"email"`
+	Phone    *string `json:"phone"`
+	Gender   *string `json:"gender"`
+	Birthday *string `json:"birthday"`
+	Avatar   *File   `json:"avatar" gorm:"foreignKey:FileId;type:varchar(255)"`
+	Age      *int    `json:"age"`
+	Role     *string `json:"role"`
 }
 
 type AuthUser struct {
@@ -156,6 +157,7 @@ type AuthUser struct {
 	LoginType    string `json:"loginType"`
 	Ticket       string `json:"ticket"`
 	RefreshToken string `json:"refreshToken"`
+	JsCode       string `json:"jsCode"`
 }
 
 type AuthOtp struct {

@@ -126,6 +126,29 @@ func CreateByEmail(ch chan string, c *gin.Context, email string) {
 	ch <- "success"
 }
 
+func CreateByOpenid(ch chan string, c *gin.Context, openid string, unionId string) {
+	var user models.User
+	user.Openid = openid
+	user.Unionid = unionId
+	if user.Openid == "" {
+		c.JSON(200, models.Result{Code: 10001, Message: "openid不能为空"})
+		return
+	}
+	newUUID := uuid.New()
+	uuidSring := newUUID.String()
+	user.Cid = "C-" + uuidSring
+
+	user.Password = "123456"
+
+	db := models.DB.Create(&user)
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	ch <- "success"
+}
+
 func CheckAndCreateExtendUserInfo(c *gin.Context, cid string, ch chan string) {
 	var userExtendInfo models.UserExtendInfo
 	userExtendInfo.Cid = cid
@@ -147,8 +170,9 @@ func CheckAndCreateExtendUserInfo(c *gin.Context, cid string, ch chan string) {
 }
 
 func UpdateUser(c *gin.Context) {
-	cid := c.Param("cid")
 	var user models.UpdateUserFields
+	err := c.ShouldBindJSON(&user)
+	cid := user.Cid
 	var oldUser models.User
 	getUser := models.DB.Where("cid = ?", cid).Where("deleted_at IS NULL").First(&oldUser)
 	if getUser.Error != nil {
@@ -160,51 +184,73 @@ func UpdateUser(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	err := c.ShouldBindJSON(&user)
 	if err != nil {
 		// 显示自定义的错误信息
 		msg := utils.GetValidMsg(err, &user)
 		c.JSON(200, models.Result{Code: 10001, Message: msg})
 		return
 	}
-	if user.Email != "" {
-		emailExist := checkEmailExists(user.Email, oldUser.Email)
+	if user.Email != nil {
+		emailExist := checkEmailExists(*user.Email, oldUser.Email)
 		if emailExist {
 			c.JSON(200, models.Result{Code: 10002, Message: "邮箱已存在"})
 			return
 		}
+		if utils.CheckEmail(*user.Email) == false {
+			c.JSON(200, models.Result{Code: 10002, Message: "邮箱格式不正确"})
+			return
+		}
 	}
-	if user.Phone != "" {
-		phoneExist := checkPhoneExists(user.Phone, oldUser.Phone)
+	if user.Phone != nil {
+		phoneExist := checkPhoneExists(*user.Phone, oldUser.Phone)
 		if phoneExist {
 			c.JSON(200, models.Result{Code: 10002, Message: "手机号已存在"})
 			return
 		}
+		if utils.CheckPhone(*user.Phone) == false {
+			c.JSON(200, models.Result{Code: 10002, Message: "手机号格式不正确"})
+			return
+		}
 	}
+
 	var newUser models.User
+
+	if user.Email != nil {
+		newUser.Email = *user.Email
+	}
+	if user.Phone != nil {
+		newUser.Phone = *user.Phone
+	}
+	if user.Avatar != nil {
+		newUser.Avatar = *user.Avatar
+	}
+	if user.Age != nil {
+		newUser.Age = *user.Age
+	}
+	if user.Username != nil {
+		newUser.Username = *user.Username
+	}
+	if user.Gender != nil {
+		newUser.Gender = *user.Gender
+	}
+	if user.Birthday != nil {
+		newUser.Birthday = *user.Birthday
+	}
+	if user.Role != nil {
+		newUser.Role = *user.Role
+	}
 	db := models.DB.Model(&oldUser).Where("cid = ?", cid).Updates(&newUser)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	resultUser := models.User{
-		Cid:      oldUser.Cid,
-		Email:    newUser.Email,
-		Phone:    newUser.Phone,
-		Avatar:   newUser.Avatar,
-		Age:      newUser.Age,
-		Username: newUser.Username,
-		Gender:   newUser.Gender,
-		Birthday: newUser.Birthday,
-		Role:     newUser.Role,
-	}
 
 	updateCh := make(chan string)
-	go models.CommonUpdate[models.User](&resultUser, c, updateCh)
+	go models.CommonUpdate[models.User](&newUser, c, updateCh)
 	<-updateCh
 
-	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(resultUser)})
+	c.JSON(200, models.Result{Code: 0, Message: "success", Data: models.GetSafeUser(newUser)})
 }
 
 func DeleteUser(c *gin.Context) {
@@ -238,6 +284,13 @@ func checkEmailExists(email string, exceptedEmail string) bool {
 	} else {
 		db = models.DB.Where("email = ?", email).First(&user)
 	}
+	return db.Error == nil
+}
+
+func checkOpenidExists(openid string) bool {
+	var user models.User
+	var db *gorm.DB
+	db = models.DB.Where("openid = ?", openid).First(&user)
 	return db.Error == nil
 }
 

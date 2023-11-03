@@ -47,6 +47,12 @@ func CheckEmail(email string) bool {
 	return emailRegex.MatchString(email)
 }
 
+func CheckPhone(phone string) bool {
+	// Regular expression to validate phone numbers (allowing only digits and dashes)
+	phoneRegex := regexp.MustCompile(`^((1[3-9])[0-9]{9})|(0\d{2,3}-?\d{7,8})$`)
+	return phoneRegex.MatchString(phone)
+}
+
 func InitValidator() {
 	cv := NewCustomValidator()
 
