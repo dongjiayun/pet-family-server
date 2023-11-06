@@ -135,4 +135,5 @@ type Article struct {
 	ColllectCount int       `json:"collectCount"`
 	Comments      Comments  `json:"comments" gorm:"type:json"`
 	CommentCount  int       `json:"commentCount"`
+	IsPrivate     bool      `json:"isPrivate" gorm:"default:false"`
 }
