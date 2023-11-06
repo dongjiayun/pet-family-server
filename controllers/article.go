@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"go-pet-family/models"
 	"go-pet-family/utils"
+	"time"
 )
 
 type ArticlesReq struct {
@@ -34,7 +35,7 @@ func GetArticles(c *gin.Context) {
 		db := models.DB.Debug().Limit(pageSize).Offset((pageNo-1)*pageSize).
 			Where("deleted_at IS NULL").
 			Where("is_private = ?", false).
-			Or("author like ? and deleted_at IS NULL", "% "+cidStr+"%").
+			Or("author like ? and deleted_at IS NULL", "%"+cidStr+"%").
 			Order("id desc").
 			Find(&articles)
 		if db.Error != nil {
@@ -93,7 +94,7 @@ func GetArticle(c *gin.Context) {
 			Where("article_id = ?", aid).
 			Where("deleted_at IS NULL").
 			Where("is_private = ?", false).
-			Or("author like ? and deleted_at IS NULL", "% "+cidStr+"%").
+			Or("author like ? and deleted_at IS NULL and article_id = ?", "%"+cidStr+"%", aid).
 			First(&article)
 		if db.Error != nil {
 			if db.Error.Error() == "record not found" {
@@ -468,4 +469,49 @@ func CheckLikeAndCollect(c *gin.Context) {
 		IsCollect bool `json:"isCollect"`
 	}
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: Result{IsLike: isLike, IsCollect: isCollect}})
+}
+
+func SetArticlePrivate(c *gin.Context) {
+	type req struct {
+		IsPrivate bool `json:"isPrivate"`
+	}
+	articleId := c.Param("articleId")
+	var article models.Article
+	var reqData req
+	c.ShouldBindJSON(&reqData)
+	db := models.DB.Where("article_id = ?", articleId).First(&article)
+	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 0, Message: "success"})
+			return
+		}
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	article.IsPrivate = reqData.IsPrivate
+	updateDb := models.DB.Model(&article).Where("article_id = ?", articleId).Update("is_private", article.IsPrivate)
+	if updateDb.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	c.JSON(200, models.Result{0, "success", nil})
+}
+
+func DeleteArticle(c *gin.Context) {
+	articleId := c.Param("articleId")
+	var article models.Article
+	db := models.DB.Where("article_id = ?", articleId).First(&article)
+	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			c.JSON(200, models.Result{Code: 0, Message: "success"})
+			return
+		}
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+	models.DB.Model(&article).Where("article_id = ?", articleId).Update("deleted_at", time.Now())
+	c.JSON(200, models.Result{0, "success", nil})
 }

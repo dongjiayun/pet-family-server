@@ -83,6 +83,8 @@ func getArticleApi(router *gin.Engine) {
 
 	r.PUT("", controllers.UpdateArticle)
 
+	r.DELETE(":articleId", controllers.DeleteArticle)
+
 	r.POST("/like/:articleId", controllers.LikeArticle)
 
 	r.DELETE("/like/:articleId", controllers.CancelLikeArticle)
@@ -92,6 +94,8 @@ func getArticleApi(router *gin.Engine) {
 	r.DELETE("/collect/:articleId", controllers.CancelCollectArticle)
 
 	r.GET("/checkLikeAndCollect/:articleId", controllers.CheckLikeAndCollect)
+
+	r.POST("/private/:articleId", controllers.SetArticlePrivate)
 }
 
 func getTagApi(router *gin.Engine) {
