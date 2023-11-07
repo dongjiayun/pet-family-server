@@ -27,7 +27,7 @@ type Model struct {
 	DeletedAt time.Time `json:"-" gorm:"default:null"`
 	IsAudit   bool      `json:"-"`
 	AuditBy   string    `json:"-" gorm:"type:varchar(255)"`
-	AuditAt   time.Time `json:"-"`
+	AuditAt   time.Time `json:"-" gorm:"default:null"`
 	UpdateBy  string    `json:"-" gorm:"type:varchar(255)"`
 }
 
