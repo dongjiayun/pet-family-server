@@ -28,8 +28,12 @@ func GetArticles(c *gin.Context) {
 	pageNo := articlesReq.PageNo
 	pageSize := articlesReq.PageSize
 	var articles models.Articles
-	checkToken, _ := CheckToken(c)
-	cid := checkToken.Cid
+	var cid string
+	tokenString := c.GetHeader("Authorization")
+	if tokenString != "" {
+		checkToken, _ := CheckToken(c)
+		cid = checkToken.Cid
+	}
 	if cid != "" {
 		cidStr := cid
 		db := models.DB.Debug().Limit(pageSize).Offset((pageNo-1)*pageSize).
@@ -86,8 +90,12 @@ func GetArticles(c *gin.Context) {
 func GetArticle(c *gin.Context) {
 	aid := c.Param("articleId")
 	var article models.Article
-	checkToken, _ := CheckToken(c)
-	cid := checkToken.Cid
+	var cid string
+	tokenString := c.GetHeader("Authorization")
+	if tokenString != "" {
+		checkToken, _ := CheckToken(c)
+		cid = checkToken.Cid
+	}
 	if cid != "" {
 		cidStr := cid
 		db := models.DB.
