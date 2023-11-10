@@ -32,6 +32,11 @@ func GetArticles(c *gin.Context) {
 	tokenString := c.GetHeader("Authorization")
 	if tokenString != "" {
 		checkToken, _ := CheckToken(c)
+		if checkToken == nil {
+			c.JSON(403, models.Result{Code: 10001, Message: "token is invalid"})
+			c.Abort()
+			return
+		}
 		cid = checkToken.Cid
 	}
 	if cid != "" {
@@ -94,6 +99,11 @@ func GetArticle(c *gin.Context) {
 	tokenString := c.GetHeader("Authorization")
 	if tokenString != "" {
 		checkToken, _ := CheckToken(c)
+		if checkToken == nil {
+			c.JSON(403, models.Result{Code: 10001, Message: "token is invalid"})
+			c.Abort()
+			return
+		}
 		cid = checkToken.Cid
 	}
 	if cid != "" {
