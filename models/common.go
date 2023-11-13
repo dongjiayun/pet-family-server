@@ -270,3 +270,27 @@ func GetFromDbAndRedis[T interface{}](t *T, key string, ch chan string) {
 		ch <- "success"
 	}
 }
+
+type Ids []string
+
+func (ids *Ids) Scan(value interface{}) error {
+	// 将数据库中的值解析为字符串切片
+	if value == nil {
+		*ids = []string{}
+		return nil
+	}
+	stringValue, ok := value.([]byte)
+	if !ok {
+		return errors.New("Invalid value type")
+	}
+	return json.Unmarshal(stringValue, ids)
+}
+
+func (ids Ids) Value() (driver.Value, error) {
+	// 将字符串切片转换为JSON字符串存储到数据库中
+	jsonString, err := json.Marshal(ids)
+	if err != nil {
+		return nil, err
+	}
+	return string(jsonString), nil
+}

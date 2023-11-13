@@ -122,18 +122,19 @@ func (articles Articles) Value() (driver.Value, error) {
 
 type Article struct {
 	Model
-	ArticleId     string    `json:"articleId" gorm:"index"`
-	Title         string    `json:"title" binding:"required"`
-	Content       string    `json:"content" binding:"required"`
-	Author        SafeUser  `json:"author" gorm:"type:json"`
-	Covers        Covers    `json:"covers" gorm:"type:json"`
-	Tags          Tags      `json:"tags" gorm:"type:json"`
-	Location      Location  `json:"location" gorm:"type:json"`
-	Likes         SafeUsers `json:"likes" gorm:"type:json"`
-	LikesCount    int       `json:"likesCount"`
-	Collects      SafeUsers `json:"collects" gorm:"type:json"`
-	ColllectCount int       `json:"collectCount"`
-	Comments      Comments  `json:"comments" gorm:"type:json"`
-	CommentCount  int       `json:"commentCount"`
-	IsPrivate     bool      `json:"isPrivate" gorm:"default:false"`
+	ArticleId     string   `json:"articleId" gorm:"index"`
+	Title         string   `json:"title" binding:"required"`
+	Content       string   `json:"content" binding:"required"`
+	Author        SafeUser `json:"author" gorm:"type:json"`
+	AuthorId      string   `json:"authorId"`
+	Covers        Covers   `json:"covers" gorm:"type:json"`
+	Tags          Tags     `json:"tags" gorm:"type:json"`
+	Location      Location `json:"location" gorm:"type:json"`
+	LikeCids      Ids      `json:"likeCids" gorm:"type:json"`
+	LikesCount    int      `json:"likesCount"`
+	CollectCids   Ids      `json:"collectCids" gorm:"type:json"`
+	ColllectCount int      `json:"collectCount"`
+	Comments      Ids      `json:"comments" gorm:"type:json"`
+	CommentCount  int      `json:"commentCount"`
+	IsPrivate     bool     `json:"isPrivate" gorm:"default:false"`
 }

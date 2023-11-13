@@ -83,7 +83,7 @@ func SendArticleMessageToAllFollows(article *models.Article, c *gin.Context) {
 	authorCid := article.Author.Cid
 	models.DB.Where("cid = ?", authorCid).Find(&userExtendInfo)
 	models.DB.Where("cid = ?", authorCid).Find(&user)
-	followers := userExtendInfo.Followers
+	followers := userExtendInfo.FollowerIds
 	for _, follower := range followers {
 		var notice models.Notice
 		notice.NoticeType = "article"
@@ -91,7 +91,7 @@ func SendArticleMessageToAllFollows(article *models.Article, c *gin.Context) {
 		notice.Title = "您关注的" + user.Username + "发表了一篇文章"
 		notice.Content = article.Title
 		notice.Avatar = user.Avatar
-		notice.TargetCid = follower.Cid
+		notice.TargetCid = follower
 
 		uuid := uuid.New()
 		uuidStr := uuid.String()

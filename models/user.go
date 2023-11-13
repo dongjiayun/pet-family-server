@@ -25,14 +25,14 @@ type User struct {
 }
 
 type UserExtendInfo struct {
-	Id           uint      `json:"-" gorm:"primary_key"`
-	Cid          string    `json:"cid" gorm:"index"`
-	Comments     Comments  `json:"comments" gorm:"type:json"`
-	LikeArticles Articles  `json:"likesArticles" gorm:"type:json"`
-	LikeComments Comments  `json:"likesComments" gorm:"type:json"`
-	Collects     Articles  `json:"collects" gorm:"type:json"`
-	Follows      SafeUsers `json:"follows" gorm:"type:json"`
-	Followers    SafeUsers `json:"followers" gorm:"type:json"`
+	Id             uint   `json:"-" gorm:"primary_key"`
+	Cid            string `json:"cid" gorm:"index"`
+	CommentIds     Ids    `json:"commentIds" gorm:"type:json"`
+	LikeArticleIds Ids    `json:"likesArticleIds" gorm:"type:json"`
+	LikeCommentIds Ids    `json:"likesCommentIds" gorm:"type:json"`
+	CollectIds     Ids    `json:"collectIds" gorm:"type:json"`
+	FollowIds      Ids    `json:"followIds" gorm:"type:json"`
+	FollowerIds    Ids    `json:"followerIds" gorm:"type:json"`
 }
 
 type Users []User
@@ -168,20 +168,20 @@ type AuthOtp struct {
 
 type UserDetail struct {
 	User
-	Comments     Comments  `json:"comments"`
-	LikeArticles Articles  `json:"likesArticles"`
-	LikeComments Comments  `json:"likesComments"`
-	Collects     Articles  `json:"collects""`
-	Follows      SafeUsers `json:"follows"`
+	CommentIds     Ids `json:"commentIds"`
+	LikeArticleIds Ids `json:"likesArticleIds"`
+	LikeCommentIds Ids `json:"likesCommentIds"`
+	CollectIds     Ids `json:"collectIds""`
+	FollowIds      Ids `json:"followIds"`
 }
 
 type SafeUserDetail struct {
 	SafeUser
-	Comments     Comments  `json:"comments"`
-	LikeArticles Articles  `json:"likesArticles"`
-	LikeComments Comments  `json:"likesComments"`
-	Collects     Articles  `json:"collects""`
-	Follows      SafeUsers `json:"follows"`
+	CommentIds     Ids `json:"commentIds"`
+	LikeArticleIds Ids `json:"likesArticleIds"`
+	LikeCommentIds Ids `json:"likesCommentIds"`
+	CollectIds     Ids `json:"collectIds""`
+	FollowIds      Ids `json:"followIds"`
 }
 
 func GetSafeUserDetail(user UserDetail) SafeUserDetail {
@@ -189,10 +189,10 @@ func GetSafeUserDetail(user UserDetail) SafeUserDetail {
 	safeUserDetail := SafeUserDetail{
 		SafeUser: safeUser,
 	}
-	safeUserDetail.Comments = user.Comments
-	safeUserDetail.LikeArticles = user.LikeArticles
-	safeUserDetail.LikeComments = user.LikeComments
-	safeUserDetail.Collects = user.Collects
-	safeUserDetail.Follows = user.Follows
+	safeUserDetail.CommentIds = user.CommentIds
+	safeUserDetail.LikeArticleIds = user.LikeArticleIds
+	safeUserDetail.LikeCommentIds = user.LikeCommentIds
+	safeUserDetail.CollectIds = user.CollectIds
+	safeUserDetail.FollowIds = user.FollowIds
 	return safeUserDetail
 }

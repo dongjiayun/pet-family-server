@@ -66,6 +66,9 @@ func getUserApi(router *gin.Engine) {
 
 	r.POST("get", controllers.GetUsers)
 
+	r.POST("/myLikeArticles", controllers.MyLikeArticles)
+
+	r.POST("/myCollectArticles", controllers.MyCollects)
 }
 
 func getArticleApi(router *gin.Engine) {

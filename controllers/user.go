@@ -311,8 +311,8 @@ func FollowUser(c *gin.Context) {
 
 	var userExtendInfo models.UserExtendInfo
 	models.DB.Where("cid = ?", cid).First(&userExtendInfo)
-	hasFollow := utils.ArrayIncludes[models.SafeUser](userExtendInfo.Follows, targetCid, func(item models.SafeUser) any {
-		return item.Cid
+	hasFollow := utils.ArrayIncludes[string](userExtendInfo.FollowIds, targetCid, func(cid string) any {
+		return cid
 	})
 	if hasFollow {
 		c.JSON(200, models.Result{Code: 10001, Message: "您已关注"})
@@ -332,9 +332,9 @@ func FollowUser(c *gin.Context) {
 		return
 	}
 
-	userExtendInfo.Follows = append(userExtendInfo.Follows, safeUser)
+	userExtendInfo.FollowIds = append(userExtendInfo.FollowIds, safeUser.Cid)
 
-	updateDb := models.DB.Model(&userExtendInfo).Where("cid = ?", cid).Update("follows", userExtendInfo.Follows)
+	updateDb := models.DB.Model(&userExtendInfo).Where("cid = ?", cid).Update("follows", userExtendInfo.FollowIds)
 	if updateDb.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
@@ -348,9 +348,9 @@ func FollowUser(c *gin.Context) {
 	var targetExtendInfo models.UserExtendInfo
 	models.DB.Where("cid = ?", targetCid).First(&targetExtendInfo)
 
-	targetExtendInfo.Followers = append(targetExtendInfo.Followers, safeSelfUser)
+	targetExtendInfo.FollowerIds = append(targetExtendInfo.FollowerIds, safeSelfUser.Cid)
 
-	updateTargetDb := models.DB.Model(&targetExtendInfo).Where("cid = ?", targetCid).Update("followers", targetExtendInfo.Followers)
+	updateTargetDb := models.DB.Model(&targetExtendInfo).Where("cid = ?", targetCid).Update("followers", targetExtendInfo.FollowerIds)
 
 	if updateTargetDb.Error != nil {
 		// SQL执行失败，返回错误信息
@@ -373,8 +373,8 @@ func UnFollowUser(c *gin.Context) {
 	cid, _ := c.Get("cid")
 	var userExtendInfo models.UserExtendInfo
 	models.DB.Where("cid = ?", cid).First(&userExtendInfo)
-	hasFollow := utils.ArrayIncludes[models.SafeUser](userExtendInfo.Follows, targetCid, func(item models.SafeUser) any {
-		return item.Cid
+	hasFollow := utils.ArrayIncludes[string](userExtendInfo.FollowIds, targetCid, func(cid string) any {
+		return cid
 	})
 	if hasFollow == false {
 		c.JSON(200, models.Result{Code: 10001, Message: "您未关注"})
@@ -394,11 +394,11 @@ func UnFollowUser(c *gin.Context) {
 		return
 	}
 
-	userExtendInfo.Follows = utils.ArrayFilter[models.SafeUser](userExtendInfo.Follows, func(item models.SafeUser) bool {
-		return item.Cid != safeUser.Cid
+	userExtendInfo.FollowIds = utils.ArrayFilter[string](userExtendInfo.FollowIds, func(cid string) bool {
+		return cid != safeUser.Cid
 	})
 
-	updateDb := models.DB.Model(&userExtendInfo).Where("cid = ?", cid).Update("follows", userExtendInfo.Follows)
+	updateDb := models.DB.Model(&userExtendInfo).Where("cid = ?", cid).Update("follows", userExtendInfo.FollowIds)
 	if updateDb.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
@@ -408,11 +408,11 @@ func UnFollowUser(c *gin.Context) {
 	var targetExtendInfo models.UserExtendInfo
 	models.DB.Where("cid = ?", targetCid).First(&targetExtendInfo)
 
-	targetExtendInfo.Followers = utils.ArrayFilter[models.SafeUser](targetExtendInfo.Followers, func(item models.SafeUser) bool {
-		return item.Cid != cid
+	targetExtendInfo.FollowerIds = utils.ArrayFilter[string](targetExtendInfo.FollowerIds, func(itemCid string) bool {
+		return itemCid != cid
 	})
 
-	updateTargetDb := models.DB.Model(&targetExtendInfo).Where("cid = ?", targetCid).Update("followers", targetExtendInfo.Followers)
+	updateTargetDb := models.DB.Model(&targetExtendInfo).Where("cid = ?", targetCid).Update("followers", targetExtendInfo.FollowerIds)
 
 	if updateTargetDb.Error != nil {
 		// SQL执行失败，返回错误信息
@@ -421,4 +421,143 @@ func UnFollowUser(c *gin.Context) {
 	}
 
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: nil})
+}
+
+func MyLikeArticles(c *gin.Context) {
+	pagination := models.Pagination{
+		PageSize: 20,
+		PageNo:   1,
+	}
+	err := c.ShouldBindJSON(&pagination)
+
+	pageNo := pagination.PageNo
+	pageSize := pagination.PageSize
+
+	if err != nil {
+		c.JSON(200, models.Result{Code: 10001, Message: "invalid request"})
+		return
+	}
+	cid, _ := c.Get("cid")
+	var user models.UserExtendInfo
+	models.DB.Select("like_article_ids").Where("cid = ?", cid.(string)).First(&user)
+	list := user.LikeArticleIds
+	if list == nil {
+		list = []string{}
+	}
+
+	var listOfResult []string
+	if len(list) > pagination.PageSize*(pagination.PageNo-1) {
+		endIndex := len(list)
+		if len(list) > pagination.PageSize*pagination.PageNo {
+			endIndex = pagination.PageSize * pagination.PageNo
+		}
+		listOfResult = list[pagination.PageSize*(pagination.PageNo-1) : endIndex]
+	} else {
+		listOfResult = []string{}
+	}
+
+	var articles models.Articles
+	db := models.DB.Where("article_id in (?)", listOfResult).Find(&articles)
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+
+	totalCount := len(list)
+
+	data := models.GetListData[models.Article](articles, pageNo, pageSize, int64(totalCount))
+
+	c.JSON(200, models.Result{0, "success", data})
+}
+
+func MyLikeComments(c *gin.Context) {
+	pagination := models.Pagination{
+		PageSize: 20,
+		PageNo:   1,
+	}
+	err := c.ShouldBindJSON(&pagination)
+	pageNo := pagination.PageNo
+	pageSize := pagination.PageSize
+	if err != nil {
+		c.JSON(200, models.Result{Code: 10001, Message: "invalid request"})
+		return
+	}
+	cid, _ := c.Get("cid")
+	var user models.UserExtendInfo
+	models.DB.Select("like_comment_ids").Where("cid = ?", cid.(string)).First(&user)
+	list := user.LikeCommentIds
+	if list == nil {
+		list = []string{}
+	}
+
+	var listOfResult []string
+	if len(list) > pagination.PageSize*(pagination.PageNo-1) {
+		endIndex := len(list)
+		if len(list) > pagination.PageSize*pagination.PageNo {
+			endIndex = pagination.PageSize * pagination.PageNo
+		}
+		listOfResult = list[pagination.PageSize*(pagination.PageNo-1) : endIndex]
+	} else {
+		listOfResult = []string{}
+	}
+
+	var comments models.Comments
+	db := models.DB.Where("comment_id in (?)", listOfResult).Find(&comments)
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+
+	totalCount := len(list)
+
+	data := models.GetListData[models.Comment](comments, pageNo, pageSize, int64(totalCount))
+	c.JSON(200, models.Result{0, "success", data})
+}
+
+func MyCollects(c *gin.Context) {
+	pagination := models.Pagination{
+		PageSize: 20,
+		PageNo:   1,
+	}
+	err := c.ShouldBindJSON(&pagination)
+	pageNo := pagination.PageNo
+	pageSize := pagination.PageSize
+	if err != nil {
+		c.JSON(200, models.Result{Code: 10001, Message: "invalid request"})
+		return
+	}
+	cid, _ := c.Get("cid")
+	var user models.UserExtendInfo
+	models.DB.Select("collect_ids").Where("cid = ?", cid.(string)).First(&user)
+	list := user.CollectIds
+	if list == nil {
+		list = []string{}
+	}
+
+	var listOfResult []string
+	if len(list) > pagination.PageSize*(pagination.PageNo-1) {
+		endIndex := len(list)
+		if len(list) > pagination.PageSize*pagination.PageNo {
+			endIndex = pagination.PageSize * pagination.PageNo
+		}
+		listOfResult = list[pagination.PageSize*(pagination.PageNo-1) : endIndex]
+	} else {
+		listOfResult = []string{}
+	}
+
+	var articles models.Articles
+	db := models.DB.Where("article_id in (?)", listOfResult).Find(&articles)
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+
+	totalCount := len(list)
+
+	data := models.GetListData[models.Article](articles, pageNo, pageSize, int64(totalCount))
+
+	c.JSON(200, models.Result{0, "success", data})
 }
