@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go-pet-family/models"
@@ -27,7 +26,10 @@ func GetNotices(c *gin.Context) {
 	pageSize := noticeReq.PageSize
 	cid, _ := c.Get("cid")
 	var notices models.Notices
-	db := models.DB.Where("owner = ?", cid).Where("deleted_at IS NULL").Limit(pageSize).Offset((pageNo - 1) * pageSize).Order("id desc").Find(&notices)
+	db := models.DB.Where("target_cid = ?", cid).
+		Where("deleted_at IS NULL").
+		Limit(pageSize).Offset((pageNo - 1) * pageSize).
+		Order("id desc").Find(&notices)
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 0, Message: "success"})
@@ -37,8 +39,6 @@ func GetNotices(c *gin.Context) {
 	}
 	var count int64
 	models.DB.Model(&notices).Where("owner = ?", cid).Where("deleted_at IS NULL").Count(&count)
-
-	fmt.Println(notices)
 
 	list := models.GetListData[models.Notice](notices, pageNo, pageSize, count)
 
@@ -129,4 +129,15 @@ func SendMessage(title string, content string, noticeType string, noticeCode str
 	if db.Error != nil {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 	}
+}
+
+func GetNoticeAmount(c *gin.Context) {
+	var notices models.Notices
+	cid, _ := c.Get("cid")
+	var amount int64
+	db := models.DB.Model(&notices).Where("target_cid = ?", cid).Where("deleted_at IS NULL").Count(&amount)
+	if db.Error != nil {
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+	}
+	c.JSON(200, models.Result{0, "success", amount})
 }

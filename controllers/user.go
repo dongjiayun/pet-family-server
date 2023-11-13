@@ -140,6 +140,8 @@ func CreateByOpenid(ch chan string, c *gin.Context, openid string, unionId strin
 
 	user.Password = "123456"
 
+	user.Email = user.Cid + "@template.com"
+
 	db := models.DB.Create(&user)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
@@ -334,7 +336,7 @@ func FollowUser(c *gin.Context) {
 
 	userExtendInfo.FollowIds = append(userExtendInfo.FollowIds, safeUser.Cid)
 
-	updateDb := models.DB.Model(&userExtendInfo).Where("cid = ?", cid).Update("follows", userExtendInfo.FollowIds)
+	updateDb := models.DB.Model(&userExtendInfo).Where("cid = ?", cid).Update("follow_ids", userExtendInfo.FollowIds)
 	if updateDb.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
@@ -350,7 +352,7 @@ func FollowUser(c *gin.Context) {
 
 	targetExtendInfo.FollowerIds = append(targetExtendInfo.FollowerIds, safeSelfUser.Cid)
 
-	updateTargetDb := models.DB.Model(&targetExtendInfo).Where("cid = ?", targetCid).Update("followers", targetExtendInfo.FollowerIds)
+	updateTargetDb := models.DB.Model(&targetExtendInfo).Where("cid = ?", targetCid).Update("follower_ids", targetExtendInfo.FollowerIds)
 
 	if updateTargetDb.Error != nil {
 		// SQL执行失败，返回错误信息
@@ -398,7 +400,7 @@ func UnFollowUser(c *gin.Context) {
 		return cid != safeUser.Cid
 	})
 
-	updateDb := models.DB.Model(&userExtendInfo).Where("cid = ?", cid).Update("follows", userExtendInfo.FollowIds)
+	updateDb := models.DB.Model(&userExtendInfo).Where("cid = ?", cid).Update("follow_ids", userExtendInfo.FollowIds)
 	if updateDb.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
@@ -412,7 +414,7 @@ func UnFollowUser(c *gin.Context) {
 		return itemCid != cid
 	})
 
-	updateTargetDb := models.DB.Model(&targetExtendInfo).Where("cid = ?", targetCid).Update("followers", targetExtendInfo.FollowerIds)
+	updateTargetDb := models.DB.Model(&targetExtendInfo).Where("cid = ?", targetCid).Update("follower_ids", targetExtendInfo.FollowerIds)
 
 	if updateTargetDb.Error != nil {
 		// SQL执行失败，返回错误信息
@@ -421,6 +423,32 @@ func UnFollowUser(c *gin.Context) {
 	}
 
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: nil})
+}
+
+func CheckFollow(c *gin.Context) {
+	cid, _ := c.Get("cid")
+	type Request struct {
+		Cid string `json:"cid"`
+	}
+	var request Request
+	err := c.ShouldBindJSON(&request)
+
+	if err != nil {
+		c.JSON(200, models.Result{Code: 10001, Message: "invalid request"})
+		return
+	}
+
+	var user models.UserExtendInfo
+
+	models.DB.Where("cid = ?", cid).First(&user)
+
+	fmt.Println(user.FollowIds)
+
+	hasFollowed := utils.ArrayIncludes[string](user.FollowIds, request.Cid, func(cid string) any {
+		return cid
+	})
+
+	c.JSON(200, models.Result{Code: 0, Message: "success", Data: hasFollowed})
 }
 
 func MyLikeArticles(c *gin.Context) {

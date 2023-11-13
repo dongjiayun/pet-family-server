@@ -69,6 +69,8 @@ func getUserApi(router *gin.Engine) {
 	r.POST("/myLikeArticles", controllers.MyLikeArticles)
 
 	r.POST("/myCollectArticles", controllers.MyCollects)
+
+	r.POST("/checkFollow", controllers.CheckFollow)
 }
 
 func getArticleApi(router *gin.Engine) {
@@ -145,6 +147,8 @@ func getNoticeApi(router *gin.Engine) {
 	r.PUT("/:noticeId", controllers.ReadNotice)
 
 	r.PUT("/readAll", controllers.ReadAllNotices)
+
+	r.GET("amount", controllers.GetNoticeAmount)
 }
 
 func getCommonApi(router *gin.Engine) {
