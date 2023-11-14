@@ -589,3 +589,132 @@ func MyCollects(c *gin.Context) {
 
 	c.JSON(200, models.Result{0, "success", data})
 }
+
+type UserReq struct {
+	models.Pagination
+	Cid string `json:"cid"`
+}
+
+func GetFollows(c *gin.Context) {
+	pagination := UserReq{
+		Pagination: models.Pagination{
+			PageSize: 20,
+			PageNo:   1,
+		},
+	}
+	err := c.ShouldBindJSON(&pagination)
+	pageNo := pagination.PageNo
+	pageSize := pagination.PageSize
+	if err != nil {
+		c.JSON(200, models.Result{Code: 10001, Message: "invalid request"})
+		return
+	}
+	var cid string
+	if pagination.Cid != "" {
+		cid = pagination.Cid
+	} else {
+		_cid, _ := c.Get("cid")
+		cid = _cid.(string)
+	}
+	var user models.UserExtendInfo
+	models.DB.Select("follow_ids").Where("cid = ?", cid).First(&user)
+	list := user.FollowIds
+	if list == nil {
+		list = []string{}
+	}
+
+	var listOfResult []string
+	if len(list) > pagination.PageSize*(pagination.PageNo-1) {
+		endIndex := len(list)
+		if len(list) > pagination.PageSize*pagination.PageNo {
+			endIndex = pagination.PageSize * pagination.PageNo
+		}
+		listOfResult = list[pagination.PageSize*(pagination.PageNo-1) : endIndex]
+	} else {
+		listOfResult = []string{}
+	}
+
+	var userList models.UserDetailList
+
+	db := models.DB.Table("user").
+		Select("*").
+		Where("user.cid in (?)", listOfResult).
+		Joins("LEFT JOIN user_extend_infos uei ON uei.cid = user.cid").
+		Find(&userList)
+
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+
+	safeUsers := models.GetSafeUserDetailList(userList)
+
+	totalCount := len(list)
+
+	data := models.GetListData[models.SafeUserDetail](safeUsers, pageNo, pageSize, int64(totalCount))
+
+	c.JSON(200, models.Result{0, "success", data})
+}
+
+func GetFollowers(c *gin.Context) {
+	pagination := UserReq{
+		Pagination: models.Pagination{
+			PageSize: 20,
+			PageNo:   1,
+		},
+	}
+	err := c.ShouldBindJSON(&pagination)
+	pageNo := pagination.PageNo
+	pageSize := pagination.PageSize
+	if err != nil {
+		c.JSON(200, models.Result{Code: 10001, Message: "invalid request"})
+		return
+	}
+	var cid string
+	if pagination.Cid != "" {
+		cid = pagination.Cid
+	} else {
+		_cid, _ := c.Get("cid")
+		cid = _cid.(string)
+	}
+	var user models.UserExtendInfo
+	models.DB.Select("follower_ids").Where("cid = ?", cid).First(&user)
+	list := user.FollowerIds
+	if list == nil {
+		list = []string{}
+	}
+
+	var listOfResult []string
+	if len(list) > pagination.PageSize*(pagination.PageNo-1) {
+		endIndex := len(list)
+		if len(list) > pagination.PageSize*pagination.PageNo {
+			endIndex = pagination.PageSize * pagination.PageNo
+		}
+		listOfResult = list[pagination.PageSize*(pagination.PageNo-1) : endIndex]
+	} else {
+		listOfResult = []string{}
+	}
+
+	var userList models.UserDetailList
+
+	db := models.DB.Table("user").
+		Select("*").
+		Where("user.cid in (?)", listOfResult).
+		Joins("LEFT JOIN user_extend_infos uei ON uei.cid = user.cid").
+		Find(&userList)
+
+	if db.Error != nil {
+		// SQL执行失败，返回错误信息
+		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
+		return
+	}
+
+	safeUsers := models.GetSafeUserDetailList(userList)
+
+	totalCount := len(list)
+
+	data := models.GetListData[models.SafeUserDetail](safeUsers, pageNo, pageSize, int64(totalCount))
+
+	c.JSON(200, models.Result{0, "success", data})
+}

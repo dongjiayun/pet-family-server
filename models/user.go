@@ -173,7 +173,10 @@ type UserDetail struct {
 	LikeCommentIds Ids `json:"likesCommentIds"`
 	CollectIds     Ids `json:"collectIds""`
 	FollowIds      Ids `json:"followIds"`
+	FollowerIds    Ids `json:"followerIds"`
 }
+
+type UserDetailList []UserDetail
 
 type SafeUserDetail struct {
 	SafeUser
@@ -182,7 +185,10 @@ type SafeUserDetail struct {
 	LikeCommentIds Ids `json:"likesCommentIds"`
 	CollectIds     Ids `json:"collectIds""`
 	FollowIds      Ids `json:"followIds"`
+	FollowerIds    Ids `json:"followerIds"`
 }
+
+type SafeUserDetailList []SafeUserDetail
 
 func GetSafeUserDetail(user UserDetail) SafeUserDetail {
 	safeUser := GetSafeUser(user.User)
@@ -194,5 +200,15 @@ func GetSafeUserDetail(user UserDetail) SafeUserDetail {
 	safeUserDetail.LikeCommentIds = user.LikeCommentIds
 	safeUserDetail.CollectIds = user.CollectIds
 	safeUserDetail.FollowIds = user.FollowIds
+	safeUserDetail.FollowerIds = user.FollowerIds
 	return safeUserDetail
+}
+
+func GetSafeUserDetailList(userDetailList UserDetailList) SafeUserDetailList {
+	safeUserDetailList := SafeUserDetailList{}
+	for _, user := range userDetailList {
+		safeUserDetail := GetSafeUserDetail(user)
+		safeUserDetailList = append(safeUserDetailList, safeUserDetail)
+	}
+	return safeUserDetailList
 }

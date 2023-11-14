@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/importcjj/sensitive"
 	"go-pet-family/models"
 	"go-pet-family/utils"
 	"time"
@@ -34,19 +35,21 @@ func GetArticles(c *gin.Context) {
 	if articlesReq.Cid != "" {
 		reqCid = articlesReq.Cid
 	}
-	tokenString := c.GetHeader("Authorization")
-	if tokenString != "" {
-		checkToken, _ := CheckToken(c)
-		if checkToken == nil {
-			c.JSON(403, models.Result{Code: 10001, Message: "token is invalid"})
-			c.Abort()
-			return
+	if reqCid == "" {
+		tokenString := c.GetHeader("Authorization")
+		if tokenString != "" {
+			checkToken, _ := CheckToken(c)
+			if checkToken == nil {
+				c.JSON(403, models.Result{Code: 10001, Message: "token is invalid"})
+				c.Abort()
+				return
+			}
+			cid = checkToken.Cid
 		}
-		cid = checkToken.Cid
 	}
 	if cid != "" {
 		cidStr := cid
-		db := models.DB.Debug().Limit(pageSize).Offset((pageNo-1)*pageSize).
+		db := models.DB.Limit(pageSize).Offset((pageNo-1)*pageSize).
 			Where("deleted_at IS NULL").
 			Where("is_private = ?", false)
 		if reqCid != "" {
@@ -64,7 +67,7 @@ func GetArticles(c *gin.Context) {
 			return
 		}
 	} else {
-		db := models.DB.Debug().Limit(pageSize).Offset((pageNo-1)*pageSize).
+		db := models.DB.Limit(pageSize).Offset((pageNo-1)*pageSize).
 			Where("deleted_at IS NULL").
 			Where("is_private = ?", false)
 		if reqCid != "" {
@@ -231,6 +234,22 @@ func CreateArticle(c *gin.Context) {
 	uuid := uuid.New()
 	uuidStr := uuid.String()
 	article.ArticleId = "Article-" + uuidStr
+
+	filter := sensitive.New()
+	filter.LoadWordDict("config/sensitiveDict.txt")
+
+	isTitleSensitive, _ := filter.Validate(article.Content)
+
+	if isTitleSensitive {
+		c.JSON(200, models.Result{Code: 10002, Message: "文章标题存在敏感词😅"})
+		return
+	}
+
+	isArticleSensitive, _ := filter.Validate(article.Content)
+	if isArticleSensitive {
+		c.JSON(200, models.Result{Code: 10002, Message: "文章内容存在敏感词😅"})
+		return
+	}
 
 	models.CommonCreate[models.Article](&article)
 
