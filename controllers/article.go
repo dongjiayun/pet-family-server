@@ -283,6 +283,22 @@ func UpdateArticle(c *gin.Context) {
 		return
 	}
 
+	filter := sensitive.New()
+	filter.LoadWordDict("config/sensitiveDict.txt")
+
+	isTitleSensitive, _ := filter.Validate(requestBody.Content)
+
+	if isTitleSensitive {
+		c.JSON(200, models.Result{Code: 10002, Message: "文章标题存在敏感词😅"})
+		return
+	}
+
+	isArticleSensitive, _ := filter.Validate(requestBody.Content)
+	if isArticleSensitive {
+		c.JSON(200, models.Result{Code: 10002, Message: "文章内容存在敏感词😅"})
+		return
+	}
+
 	update := models.Article{
 		Title:    requestBody.Title,
 		Content:  requestBody.Content,
