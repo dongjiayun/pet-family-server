@@ -135,7 +135,8 @@ func GetNoticeAmount(c *gin.Context) {
 	var notices models.Notices
 	cid, _ := c.Get("cid")
 	var amount int64
-	db := models.DB.Model(&notices).Where("target_cid = ?", cid).Where("deleted_at IS NULL").Count(&amount)
+	db := models.DB.Model(&notices).
+		Where("target_cid = ? and is_readed = 0", cid).Where("deleted_at IS NULL").Count(&amount)
 	if db.Error != nil {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 	}
