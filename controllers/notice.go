@@ -29,7 +29,7 @@ func GetNotices(c *gin.Context) {
 	db := models.DB.Where("target_cid = ?", cid).
 		Where("deleted_at IS NULL").
 		Limit(pageSize).Offset((pageNo - 1) * pageSize).
-		Order("id desc").Find(&notices)
+		Order("is_readed asc").Order("id desc").Find(&notices)
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 0, Message: "success"})
@@ -38,7 +38,7 @@ func GetNotices(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 	}
 	var count int64
-	models.DB.Model(&notices).Where("owner = ?", cid).Where("deleted_at IS NULL").Count(&count)
+	models.DB.Model(&notices).Where("target_cid = ?", cid).Where("deleted_at IS NULL").Count(&count)
 
 	list := models.GetListData[models.Notice](notices, pageNo, pageSize, count)
 
@@ -49,7 +49,7 @@ func ReadNotice(c *gin.Context) {
 	noticeId := c.Param("noticeId")
 	cid, _ := c.Get("cid")
 	var notice models.Notice
-	db := models.DB.Where("notice_id = ?", noticeId).Where("owner = ?", cid).First(&notice)
+	db := models.DB.Where("notice_id = ?", noticeId).Where("target_cid = ?", cid).First(&notice)
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 0, Message: "success"})
@@ -67,7 +67,7 @@ func ReadNotice(c *gin.Context) {
 func ReadAllNotices(c *gin.Context) {
 	var notices models.Notices
 	cid, _ := c.Get("cid")
-	models.DB.Where("owner = ?", cid).Where("deleted_at IS NULL AND is_readed = ?", false).Limit(20).Offset(0).Order("id desc").Order("id desc").Find(&notices)
+	models.DB.Where("target_cid = ?", cid).Where("deleted_at IS NULL AND is_readed = ?", false).Limit(20).Offset(0).Order("id desc").Order("id desc").Find(&notices)
 	for _, notice := range notices {
 		readDb := models.DB.Model(&notice).Where("notice_id = ?", notice.NoticeId).Update("is_readed", true)
 		if readDb.Error != nil {

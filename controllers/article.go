@@ -365,7 +365,7 @@ func LikeArticle(c *gin.Context) {
 	}
 
 	title := "您有新的点赞"
-	content := "您的文章" + article.Title + "被点赞了"
+	content := user.Username + "点赞了您的文章" + article.Title
 	noticeType := "likeArticle"
 	noticeId := article.ArticleId
 	SendMessage(title, content, noticeType, noticeId, &user, article.Author.Cid, c)
@@ -463,7 +463,7 @@ func CollectArticle(c *gin.Context) {
 	}
 
 	title := "您有新的收藏"
-	content := "您的文章" + article.Title + "被收藏了"
+	content := user.Username + "收藏了您的文章" + article.Title
 	noticeType := "collectArticle"
 	noticeId := article.ArticleId
 	SendMessage(title, content, noticeType, noticeId, &user, article.Author.Cid, c)
