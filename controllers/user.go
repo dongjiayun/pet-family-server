@@ -115,7 +115,7 @@ func CreateByEmail(ch chan string, c *gin.Context, email string) {
 	uuidSring := newUUID.String()
 	user.Cid = "C-" + uuidSring
 
-	user.Username = "猫猫" + user.Cid[len(user.Cid)-8:]
+	user.Username = "猫猫-" + user.Cid[len(user.Cid)-6:]
 
 	user.Password = "123456"
 
@@ -144,7 +144,7 @@ func CreateByOpenid(ch chan string, c *gin.Context, openid string, unionId strin
 
 	user.Email = user.Cid + "@template.com"
 
-	user.Username = "猫猫" + user.Cid[len(user.Cid)-8:]
+	user.Username = "猫猫-" + user.Cid[len(user.Cid)-6:]
 
 	db := models.DB.Create(&user)
 	if db.Error != nil {

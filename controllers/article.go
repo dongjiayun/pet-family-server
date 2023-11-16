@@ -87,7 +87,7 @@ func GetArticles(c *gin.Context) {
 
 	utils.ArrayForeach[models.Article]((*[]models.Article)(&articles), func(article models.Article) models.Article {
 		article.ColllectCount = len(article.CollectCids)
-		article.CommentCount = len(article.Comments)
+		article.CommentCount = len(article.CommentIds)
 		article.LikesCount = len(article.LikeCids)
 		return article
 	})
@@ -158,7 +158,7 @@ func GetArticle(c *gin.Context) {
 	<-ch
 
 	article.ColllectCount = len(article.CollectCids)
-	article.CommentCount = len(article.Comments)
+	article.CommentCount = len(article.CommentIds)
 	article.LikesCount = len(article.LikeCids)
 
 	c.JSON(200, models.Result{0, "success", article})

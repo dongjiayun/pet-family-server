@@ -14,14 +14,16 @@ type Tag struct {
 
 type Comment struct {
 	Model
-	CommentId   string     `json:"commentId" gorm:"index"`
-	Content     string     `json:"content" binding:"required"`
-	Author      SafeUser   `json:"author"  gorm:"type:varchar(255)"`
-	Location    Location   `json:"location" gorm:"type:varchar(255)"`
-	Likes       []SafeUser `json:"likes" gorm:"type:varchar(255)"`
-	TargetId    string     `json:"targetId" binding:"required"`
-	TargetName  string     `json:"targetName" binding:"required"`
-	Attachments []File     `json:"attachments" gorm:"type:varchar(255)"`
+	CommentId string   `json:"commentId" gorm:"index"`
+	Content   string   `json:"content" binding:"required"`
+	Author    SafeUser `json:"author"  gorm:"type:longtext"`
+	Location  Location `json:"location" gorm:"type:longtext"`
+	LikeIds   Ids      `json:"likes" gorm:"type:longtext"`
+	TargetId  string   `json:"targetId" binding:"required"`
+	//TargetName    string     `json:"targetName" binding:"required"`
+	Attachments   []File `json:"attachments" gorm:"type:longtext"`
+	ArticleId     string `json:"articleId" binding:"required"`
+	RootCommentId string `json:"rootCommentId"`
 }
 
 type Tags []Tag
@@ -134,7 +136,7 @@ type Article struct {
 	LikesCount    int      `json:"likesCount"`
 	CollectCids   Ids      `json:"collectCids" gorm:"type:json"`
 	ColllectCount int      `json:"collectCount"`
-	Comments      Ids      `json:"comments" gorm:"type:json"`
+	CommentIds    Ids      `json:"commentIds" gorm:"type:json"`
 	CommentCount  int      `json:"commentCount"`
 	IsPrivate     bool     `json:"isPrivate" gorm:"default:false"`
 }

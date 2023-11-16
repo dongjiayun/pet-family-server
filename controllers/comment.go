@@ -37,7 +37,12 @@ func GetComments(c *gin.Context) {
 
 	var comments models.Comments
 
-	db := models.DB.Where("target_id = ?", targetId).Order("id desc").Where("deleted_at IS NULL").Limit(pageSize).Offset((pageNo - 1) * pageSize).Find(&comments)
+	db := models.DB.
+		Where("target_id = ?", targetId).
+		Order("id desc").
+		Where("deleted_at IS NULL").
+		Limit(pageSize).Offset((pageNo - 1) * pageSize).
+		Find(&comments)
 
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
@@ -138,7 +143,23 @@ func CreateComment(c *gin.Context) {
 	uuidStr := uuid.String()
 	comment.CommentId = "Comment-" + uuidStr
 
+	isArticle := strings.Contains(comment.TargetId, "Article")
+
+	if isArticle == false {
+		if comment.RootCommentId == "" {
+			c.JSON(200, models.Result{Code: 10001, Message: "请传入根评论id"})
+			return
+		}
+	}
+
+	var user models.User
+	models.DB.Where("cid = ?", cid).First(&user)
+
 	models.CommonCreate[models.Comment](&comment)
+
+	safeUser := models.GetSafeUser(user)
+
+	comment.Author = safeUser
 
 	db := models.DB.Create(&comment)
 	if db.Error != nil {
@@ -147,12 +168,17 @@ func CreateComment(c *gin.Context) {
 		return
 	}
 
+	var aritcle models.Article
+
+	models.DB.Where("article_id = ?", comment.ArticleId).First(&aritcle)
+
+	aritcle.CommentIds = append(aritcle.CommentIds, comment.CommentId)
+
+	models.DB.Model(&aritcle).Update("comment_ids", aritcle.CommentIds)
+
 	var title string
 	var targetUserId string
 
-	isArticle := strings.Contains(comment.TargetId, "Article")
-	var user models.User
-	models.DB.Where("cid = ?", cid).First(&user)
 	if isArticle {
 		title = user.Username + "评论了你的文章"
 		var article models.Article
