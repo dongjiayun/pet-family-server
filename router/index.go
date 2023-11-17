@@ -139,6 +139,12 @@ func getCommentApi(router *gin.Engine) {
 	r.PUT("", controllers.UpdateComment)
 
 	r.DELETE(":commentId", controllers.DeleteComment)
+
+	r.POST("/like/:commentId", controllers.LikeComment)
+
+	r.DELETE("/like/:commentId", controllers.UnLikeComment)
+
+	r.POST("/get/like", controllers.GetMineLikeComments)
 }
 
 func getNoticeApi(router *gin.Engine) {
