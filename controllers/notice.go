@@ -67,7 +67,7 @@ func ReadNotice(c *gin.Context) {
 func ReadAllNotices(c *gin.Context) {
 	var notices models.Notices
 	cid, _ := c.Get("cid")
-	models.DB.Where("target_cid = ?", cid).Where("deleted_at IS NULL AND is_readed = ?", false).Limit(20).Offset(0).Order("id desc").Order("id desc").Find(&notices)
+	models.DB.Where("target_cid = ?", cid).Where("deleted_at IS NULL AND is_readed = ?", false).Limit(20).Offset(0).Order("id desc").Find(&notices)
 	for _, notice := range notices {
 		readDb := models.DB.Model(&notice).Where("notice_id = ?", notice.NoticeId).Update("is_readed", true)
 		if readDb.Error != nil {
