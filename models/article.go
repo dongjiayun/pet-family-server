@@ -24,7 +24,7 @@ type Comment struct {
 	//TargetName    string     `json:"targetName" binding:"required"`
 	Attachments        []File `json:"attachments" gorm:"type:longtext"`
 	ArticleId          string `json:"articleId" binding:"required"`
-	RootCommentId      string `json:"rootCommentId"`
+	RootCommentId      string `json:"rootCommentId" gorm:"default:null"`
 	ChildrenCommentIds Ids    `json:"childrenCommentIds"`
 }
 

@@ -51,7 +51,7 @@ func GetComments(c *gin.Context) {
 		db = db.Where("author_id = ?", authorCid)
 	}
 
-	db.Debug().Order("id desc").
+	db.Order("id desc").
 		Where("deleted_at IS NULL").
 		Limit(pageSize).Offset((pageNo - 1) * pageSize).
 		Find(&comments)
