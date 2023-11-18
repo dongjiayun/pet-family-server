@@ -271,6 +271,7 @@ func UpdateArticle(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10001, Message: err.Error()})
 		return
 	}
+
 	article := models.Article{}
 	db := models.DB.Where("article_id = ?", articleId).Where("deleted_at IS NULL").First(&article)
 	if db.Error != nil {
@@ -282,6 +283,10 @@ func UpdateArticle(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+
+	var ch = make(chan bool)
+	go CheckSelfOrAdmin(c, article.AuthorId, ch)
+	<-ch
 
 	filter := sensitive.New()
 	filter.LoadWordDict("config/sensitiveDict.txt")
@@ -542,9 +547,15 @@ func SetArticlePrivate(c *gin.Context) {
 	}
 	articleId := c.Param("articleId")
 	var article models.Article
+
 	var reqData req
 	c.ShouldBindJSON(&reqData)
 	db := models.DB.Where("article_id = ?", articleId).First(&article)
+
+	var ch = make(chan bool)
+	go CheckSelfOrAdmin(c, article.AuthorId, ch)
+	<-ch
+
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 0, Message: "success"})
@@ -568,6 +579,11 @@ func DeleteArticle(c *gin.Context) {
 	articleId := c.Param("articleId")
 	var article models.Article
 	db := models.DB.Where("article_id = ?", articleId).First(&article)
+
+	var ch = make(chan bool)
+	go CheckSelfOrAdmin(c, article.AuthorId, ch)
+	<-ch
+
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 0, Message: "success"})
