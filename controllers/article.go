@@ -284,9 +284,9 @@ func UpdateArticle(c *gin.Context) {
 		return
 	}
 
-	var ch = make(chan bool)
-	go CheckSelfOrAdmin(c, article.AuthorId, ch)
-	<-ch
+	var ch1 = make(chan bool)
+	go CheckSelfOrAdmin(c, article.AuthorId, ch1)
+	<-ch1
 
 	filter := sensitive.New()
 	filter.LoadWordDict("config/sensitiveDict.txt")
