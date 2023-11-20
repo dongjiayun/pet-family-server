@@ -258,6 +258,15 @@ func DeleteComment(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
+
+	var ch = make(chan string)
+	go CheckSelfOrAdmin(c, comment.AuthorId, ch)
+	message := <-ch
+	if message != "success" {
+		c.JSON(200, models.Result{Code: 10001, Message: message})
+		return
+	}
+
 	db = models.DB.Model(&comment).Where("comment_id = ?", commentId).Update("deleted_at", time.Now())
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
