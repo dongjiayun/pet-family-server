@@ -31,16 +31,8 @@ func checkUserExtendInfoMiddleware(c *gin.Context) {
 	<-chUE
 }
 
-func addCrosHeaderMiddleware(c *gin.Context) {
-	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-}
-
 func getAuthApi(router *gin.Engine) {
 	r := router.Group("/auth")
-
-	r.Use(addCrosHeaderMiddleware)
 
 	r.POST("/signIn", controllers.SignIn)
 
@@ -53,8 +45,6 @@ func getAuthApi(router *gin.Engine) {
 
 func getUserApi(router *gin.Engine) {
 	r := router.Group("/user")
-
-	r.Use(addCrosHeaderMiddleware)
 
 	r.Use(checkTokenMiddleware)
 
@@ -90,8 +80,6 @@ func getUserApi(router *gin.Engine) {
 func getArticleApi(router *gin.Engine) {
 	r := router.Group("/article")
 
-	r.Use(addCrosHeaderMiddleware)
-
 	r.Use(checkUserExtendInfoMiddleware)
 
 	r.POST("get", controllers.GetArticles)
@@ -122,8 +110,6 @@ func getArticleApi(router *gin.Engine) {
 func getTagApi(router *gin.Engine) {
 	r := router.Group("/tag")
 
-	r.Use(addCrosHeaderMiddleware)
-
 	r.Use(checkTokenMiddleware)
 
 	r.Use(checkUserExtendInfoMiddleware)
@@ -141,8 +127,6 @@ func getTagApi(router *gin.Engine) {
 
 func getCommentApi(router *gin.Engine) {
 	r := router.Group("/comment")
-
-	r.Use(addCrosHeaderMiddleware)
 
 	r.Use(checkTokenMiddleware)
 
@@ -166,8 +150,6 @@ func getCommentApi(router *gin.Engine) {
 func getNoticeApi(router *gin.Engine) {
 	r := router.Group("/notice")
 
-	r.Use(addCrosHeaderMiddleware)
-
 	r.Use(checkTokenMiddleware)
 
 	r.POST("get", controllers.GetNotices)
@@ -181,8 +163,6 @@ func getNoticeApi(router *gin.Engine) {
 
 func getCommonApi(router *gin.Engine) {
 	r := router.Group("/common")
-
-	r.Use(addCrosHeaderMiddleware)
 
 	r.GET("getAllArea", controllers.GetAllArea)
 
