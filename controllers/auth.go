@@ -497,21 +497,20 @@ func CheckToken(c *gin.Context) (*TokenClaims, error) {
 	}, nil
 }
 
-func CheckSelfOrAdmin(c *gin.Context, cid string, ch chan bool) {
+func CheckSelfOrAdmin(c *gin.Context, cid string, ch chan string) {
 	claims, err := CheckToken(c)
-	var valid bool
+	var message string
 	if err != nil {
-		c.JSON(401, models.Result{Code: 10001, Message: "请重新登陆"})
-		valid = false
+		message = "请重新登陆"
 	}
+	fmt.Println(claims.Cid)
 	if claims.Cid == "C000000000001" {
-		valid = true
-	}
-	if claims.Cid == cid {
-		valid = true
+		message = "success"
+	} else if claims.Cid == cid {
+		message = "success"
 	} else {
-		c.JSON(200, models.Result{Code: 10001, Message: "您没有该操作的权限"})
-		valid = false
+		message = "您没有该操作的权限"
 	}
-	ch <- valid
+
+	ch <- message
 }

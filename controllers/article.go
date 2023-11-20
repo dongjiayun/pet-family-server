@@ -284,9 +284,14 @@ func UpdateArticle(c *gin.Context) {
 		return
 	}
 
-	var ch1 = make(chan bool)
+	var ch1 = make(chan string)
 	go CheckSelfOrAdmin(c, article.AuthorId, ch1)
-	<-ch1
+	message := <-ch1
+
+	if message != "success" {
+		c.JSON(200, models.Result{Code: 10001, Message: message})
+		return
+	}
 
 	filter := sensitive.New()
 	filter.LoadWordDict("config/sensitiveDict.txt")
@@ -552,9 +557,13 @@ func SetArticlePrivate(c *gin.Context) {
 	c.ShouldBindJSON(&reqData)
 	db := models.DB.Where("article_id = ?", articleId).First(&article)
 
-	var ch = make(chan bool)
+	var ch = make(chan string)
 	go CheckSelfOrAdmin(c, article.AuthorId, ch)
-	<-ch
+	message := <-ch
+	if message != "success" {
+		c.JSON(200, models.Result{Code: 10001, Message: message})
+		return
+	}
 
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
@@ -580,9 +589,13 @@ func DeleteArticle(c *gin.Context) {
 	var article models.Article
 	db := models.DB.Where("article_id = ?", articleId).First(&article)
 
-	var ch = make(chan bool)
+	var ch = make(chan string)
 	go CheckSelfOrAdmin(c, article.AuthorId, ch)
-	<-ch
+	message := <-ch
+	if message != "success" {
+		c.JSON(200, models.Result{Code: 10001, Message: message})
+		return
+	}
 
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
