@@ -22,5 +22,6 @@ func main() {
 		}
 		c.Next()
 	})
+	r.Use(router.CORSMiddleware())
 	r.Run("0.0.0.0:2000")
 }
