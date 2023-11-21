@@ -192,7 +192,7 @@ func setCros(router *gin.Engine) {
 
 func GetRouter() *gin.Engine {
 	router := gin.Default()
-	setCros(router)
+	//setCros(router)
 	genDoc(router)
 	getAuthApi(router)
 	getUserApi(router)
