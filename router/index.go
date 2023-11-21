@@ -6,6 +6,7 @@ import (
 	"github.com/swaggo/gin-swagger"
 	"go-pet-family/controllers"
 	"go-pet-family/models"
+	"net/http"
 )
 
 func genDoc(router *gin.Engine) {
@@ -15,12 +16,12 @@ func genDoc(router *gin.Engine) {
 
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		//c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		//c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		//c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "https://club.meowmeowmeow.cn")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(200)
+			c.AbortWithStatus(http.StatusOK)
 			return
 		}
 
