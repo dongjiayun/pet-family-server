@@ -186,8 +186,13 @@ func getCommonApi(router *gin.Engine) {
 	r.Use(checkTokenMiddleware)
 }
 
+func setCros(router *gin.Engine) {
+	router.Use(CORSMiddleware())
+}
+
 func GetRouter() *gin.Engine {
 	router := gin.Default()
+	setCros(router)
 	genDoc(router)
 	getAuthApi(router)
 	getUserApi(router)
