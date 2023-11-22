@@ -16,6 +16,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 )
@@ -115,6 +116,10 @@ func SignIn(c *gin.Context) {
 				return
 			}
 			if resultUser.Password == user.Password {
+				if user.Password == "123456" {
+					c.JSON(200, models.Result{Code: 10001, Message: "初始密码无法用于登陆,请您使用邮箱验证码登录后修改后重试~"})
+					return
+				}
 				generateToken(c, user.Email, "email")
 			} else {
 				c.JSON(200, models.Result{Code: 10001, Message: "密码错误"})
@@ -513,4 +518,42 @@ func CheckSelfOrAdmin(c *gin.Context, cid string, ch chan string) {
 	}
 
 	ch <- message
+}
+
+type ResetPasswordRequest struct {
+	Password    string `json:"password"`
+	NewPassword string `json:"newPassword"`
+}
+
+func ResetPassword(c *gin.Context) {
+	cid, _ := c.Get("cid")
+	var request ResetPasswordRequest
+	err := c.ShouldBindJSON(&request)
+	if err != nil {
+		c.JSON(200, models.Result{Code: 10001, Message: err.Error()})
+		return
+	}
+	password := request.Password
+	newPassword := request.NewPassword
+	pattern := "^[a-zA-Z0-9]+[a-zA-Z0-9!@#$%^&*()_+{}|:;\"'<>,.?/~`]{6,20}$"
+
+	if !regexp.MustCompile(pattern).MatchString(newPassword) {
+		c.JSON(200, models.Result{Code: 10002, Message: "密码格式不正确"})
+		return
+	}
+
+	var user models.User
+	models.DB.Where("cid = ?", cid).First(&user)
+
+	if password != user.Password {
+		c.JSON(200, models.Result{Code: 10003, Message: "原密码不正确"})
+		return
+	}
+
+	models.DB.Model(&user).Where("cid = ?", cid).Update("password", newPassword)
+
+	token := c.GetHeader("Authorization")
+	handleWasteToken(token)
+
+	c.JSON(200, models.Result{0, "success", nil})
 }

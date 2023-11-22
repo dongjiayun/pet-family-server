@@ -57,6 +57,8 @@ func getAuthApi(router *gin.Engine) {
 	r.Use(checkTokenMiddleware).POST("/signOut", controllers.SignOut)
 
 	r.POST("/refreshToken", controllers.RefreshToken)
+
+	r.POST("/resetPassword", controllers.ResetPassword)
 }
 
 func getUserApi(router *gin.Engine) {
