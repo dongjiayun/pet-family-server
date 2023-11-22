@@ -75,3 +75,8 @@ func GetValidMsg(err error, obj interface{}) string {
 	}
 	return err.Error()
 }
+
+func CheckPassword(password string) bool {
+	emailRegex := regexp.MustCompile("^[a-zA-Z0-9]+[a-zA-Z0-9!@#$%^&*()_+{}|:;\"'<>,.?/~`]{6,20}$")
+	return emailRegex.MatchString(password)
+}

@@ -16,7 +16,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"time"
 )
@@ -535,9 +534,8 @@ func ResetPassword(c *gin.Context) {
 	}
 	password := request.Password
 	newPassword := request.NewPassword
-	pattern := "^[a-zA-Z0-9]+[a-zA-Z0-9!@#$%^&*()_+{}|:;\"'<>,.?/~`]{6,20}$"
 
-	if !regexp.MustCompile(pattern).MatchString(newPassword) {
+	if !utils.CheckPassword(newPassword) {
 		c.JSON(200, models.Result{Code: 10002, Message: "密码格式不正确"})
 		return
 	}
@@ -556,4 +554,63 @@ func ResetPassword(c *gin.Context) {
 	handleWasteToken(token)
 
 	c.JSON(200, models.Result{0, "success", nil})
+}
+
+type FindbackPasswordRequest struct {
+	Password string `json:"password"`
+	Smscode  string `json:"smscode"`
+	Email    string `json:"email"`
+	Ticket   string `json:"ticket"`
+}
+
+func FindbackPassword(c *gin.Context) {
+	var request FindbackPasswordRequest
+	err := c.ShouldBindJSON(&request)
+	if err != nil {
+		c.JSON(200, models.Result{Code: 10001, Message: err.Error()})
+		return
+	}
+	if request.Email == "" {
+		c.JSON(200, models.Result{Code: 10001, Message: "邮箱不能为空"})
+		return
+	}
+	emailExist := checkEmailExists(request.Email, "")
+	if emailExist {
+		if request.Smscode == "" {
+			c.JSON(200, models.Result{Code: 10001, Message: "验证码不能为空"})
+			return
+		}
+
+		if request.Ticket == "" {
+			c.JSON(200, models.Result{Code: 10001, Message: "ticket不能为空"})
+			return
+		}
+
+		optCache := models.RedisClient.Get(context.Background(), request.Email)
+
+		if optCache.Val() != "" {
+			var cache models.AuthOtp
+			json.Unmarshal([]byte(optCache.Val()), &cache)
+			if cache.Code == request.Smscode && cache.Ticket == request.Ticket {
+				var user models.User
+				models.DB.Where("email = ?", request.Email).First(&user)
+				user.Password = request.Password
+				models.DB.Save(&user)
+				token := c.GetHeader("Authorization")
+				if token != "" {
+					handleWasteToken(token)
+				}
+				c.JSON(200, models.Result{0, "success", nil})
+				return
+			} else {
+				c.JSON(200, models.Result{Code: 10001, Message: "验证码错误"})
+				return
+			}
+		} else {
+			c.JSON(200, models.Result{Code: 10001, Message: "请发送验证码"})
+		}
+	} else {
+		c.JSON(200, models.Result{Code: 10001, Message: "邮箱不存在"})
+		return
+	}
 }
