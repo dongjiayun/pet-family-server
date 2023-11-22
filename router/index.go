@@ -146,11 +146,11 @@ func getTagApi(router *gin.Engine) {
 func getCommentApi(router *gin.Engine) {
 	r := router.Group("/comment")
 
-	r.Use(checkTokenMiddleware)
-
 	r.POST("get", controllers.GetComments)
 
 	r.GET(":commentId", controllers.GetComment)
+
+	r.Use(checkTokenMiddleware)
 
 	r.POST("", controllers.CreateComment)
 
