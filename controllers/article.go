@@ -110,7 +110,8 @@ func GetArticles(c *gin.Context) {
 	}
 
 	var count int64
-	models.DB.Model(&articles).Count(&count)
+
+	models.DB.Debug().Model(&articles).Where("deleted_at IS NULL").Where("is_private = ?", false).Count(&count)
 
 	list := models.GetListData[models.Article](articles, pageNo, pageSize, count)
 
