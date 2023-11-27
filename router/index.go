@@ -191,6 +191,22 @@ func getCommonApi(router *gin.Engine) {
 	r.Use(checkTokenMiddleware)
 }
 
+func getMessageApi(router *gin.Engine) {
+	r := router.Group("/message")
+
+	r.POST("", controllers.GetMessage)
+
+	r.POST("create", controllers.CreateMessage)
+
+	r.DELETE("/:messageId", controllers.DeleteMessage)
+
+	r.Use(checkTokenMiddleware)
+
+	r.POST("like/:messageId", controllers.LikeMessage)
+
+	r.DELETE("like/:messageId", controllers.UnLikeMessage)
+}
+
 func setCros(router *gin.Engine) {
 	router.Use(CORSMiddleware())
 }
@@ -206,5 +222,6 @@ func GetRouter() *gin.Engine {
 	getCommentApi(router)
 	getNoticeApi(router)
 	getCommonApi(router)
+	getMessageApi(router)
 	return router
 }
