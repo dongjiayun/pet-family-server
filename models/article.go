@@ -141,4 +141,5 @@ type Article struct {
 	CommentIds    Ids      `json:"commentIds" gorm:"type:json"`
 	CommentCount  int      `json:"commentCount"`
 	IsPrivate     bool     `json:"isPrivate" gorm:"default:false"`
+	isMarkdown    bool     `json:"isMarkdown" gorm:"default:false"`
 }
