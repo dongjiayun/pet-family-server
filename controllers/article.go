@@ -187,6 +187,9 @@ func GetArticle(c *gin.Context) {
 	article.CommentCount = len(article.CommentIds)
 	article.LikesCount = len(article.LikeCids)
 
+	article.ReadCount++
+	models.DB.Model(&article).Update("read_count", article.ReadCount)
+
 	c.JSON(200, models.Result{0, "success", article})
 }
 

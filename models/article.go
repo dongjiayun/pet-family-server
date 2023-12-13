@@ -142,4 +142,5 @@ type Article struct {
 	CommentCount  int      `json:"commentCount"`
 	IsPrivate     bool     `json:"isPrivate" gorm:"default:false"`
 	IsMarkdown    bool     `json:"isMarkdown" gorm:"default:false"`
+	ReadCount     int      `json:"readCount"`
 }
