@@ -11,10 +11,10 @@ import (
 
 type ArticlesReq struct {
 	models.Pagination
-	Sync    bool     `json:"sync"`
-	Cid     string   `json:"cid"`
-	TagIds  []string `json:"tagIds"`
-	Keyword string   `json:"keyword"`
+	Sync    bool   `json:"sync"`
+	Cid     string `json:"cid"`
+	TagId   string `json:"tagId"`
+	Keyword string `json:"keyword"`
 }
 
 func GetArticles(c *gin.Context) {
@@ -34,10 +34,10 @@ func GetArticles(c *gin.Context) {
 	var articles models.Articles
 	var cid string
 	var reqCid string
-	var tagIds []string
+	var tagId string
 	var keyword string
-	if articlesReq.TagIds != nil {
-		tagIds = articlesReq.TagIds
+	if articlesReq.TagId != "" {
+		tagId = articlesReq.TagId
 	}
 	if articlesReq.Keyword != "" {
 		keyword = articlesReq.Keyword
@@ -64,11 +64,8 @@ func GetArticles(c *gin.Context) {
 	if reqCid != "" {
 		db.Where("author_id = ? ", reqCid)
 	}
-	if tagIds != nil {
-		utils.ArrayForeach(&tagIds, func(tagId string) string {
-			db.Where("tags like ?", "%"+tagId+"%")
-			return tagId
-		})
+	if tagId != "" {
+		db.Where("tags like ?", "%"+tagId+"%")
 	}
 	if keyword != "" {
 		db.Where("title like ?", "%"+keyword+"%")
@@ -87,11 +84,11 @@ func GetArticles(c *gin.Context) {
 		cidStr := cid
 		db.Where("is_private = ?", false)
 		db.Or("author_id = ? and deleted_at IS NULL", cidStr)
-		if tagIds != nil {
-			utils.ArrayForeach(&tagIds, func(tagId string) string {
-				db.Where("tags like ?", "%"+tagId+"%")
-				return tagId
-			})
+		if reqCid != "" {
+			db.Where("author_id = ? ", reqCid)
+		}
+		if tagId != "" {
+			db.Where("tags like ?", "%"+tagId+"%")
 		}
 		if keyword != "" {
 			db.Where("title like ?", "%"+keyword+"%")
