@@ -87,6 +87,15 @@ func GetArticles(c *gin.Context) {
 		cidStr := cid
 		db.Where("is_private = ?", false)
 		db.Or("author_id = ? and deleted_at IS NULL", cidStr)
+		if tagIds != nil {
+			utils.ArrayForeach(&tagIds, func(tagId string) string {
+				db.Where("tags like ?", "%"+tagId+"%")
+				return tagId
+			})
+		}
+		if keyword != "" {
+			db.Where("title like ?", "%"+keyword+"%")
+		}
 		db.Find(&articles)
 		if db.Error != nil {
 			if db.Error.Error() == "record not found" {
