@@ -140,15 +140,15 @@ func getArticleApi(router *gin.Engine) {
 func getTagApi(router *gin.Engine) {
 	r := router.Group("/tag")
 
-	r.Use(checkTokenMiddleware)
-
 	r.Use(checkUserExtendInfoMiddleware)
-
-	r.Use(checkAdminMiddleware)
 
 	r.POST("get", controllers.GetTags)
 
 	r.GET(":tagId", controllers.GetTag)
+
+	r.Use(checkTokenMiddleware)
+
+	r.Use(checkAdminMiddleware)
 
 	r.POST("", controllers.CreateTag)
 
