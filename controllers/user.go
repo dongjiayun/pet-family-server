@@ -455,15 +455,22 @@ func CheckFollow(c *gin.Context) {
 	c.JSON(200, models.Result{Code: 0, Message: "success", Data: hasFollowed})
 }
 
-func MyLikeArticles(c *gin.Context) {
-	pagination := models.Pagination{
-		PageSize: 20,
-		PageNo:   1,
-	}
-	err := c.ShouldBindJSON(&pagination)
+type UserArticlesReq struct {
+	models.Pagination
+	TagId string `json:"tagId"`
+}
 
-	pageNo := pagination.PageNo
-	pageSize := pagination.PageSize
+func MyLikeArticles(c *gin.Context) {
+	articlesReq := UserArticlesReq{
+		Pagination: models.Pagination{
+			PageSize: 20,
+			PageNo:   1,
+		},
+	}
+	err := c.ShouldBindJSON(&articlesReq)
+
+	pageNo := articlesReq.PageNo
+	pageSize := articlesReq.PageSize
 
 	if err != nil {
 		c.JSON(200, models.Result{Code: 10001, Message: "invalid request"})
@@ -478,18 +485,26 @@ func MyLikeArticles(c *gin.Context) {
 	}
 
 	var listOfResult []string
-	if len(list) > pagination.PageSize*(pagination.PageNo-1) {
+	if len(list) > articlesReq.PageSize*(articlesReq.PageNo-1) {
 		endIndex := len(list)
-		if len(list) > pagination.PageSize*pagination.PageNo {
-			endIndex = pagination.PageSize * pagination.PageNo
+		if len(list) > articlesReq.PageSize*articlesReq.PageNo {
+			endIndex = articlesReq.PageSize * articlesReq.PageNo
 		}
-		listOfResult = list[pagination.PageSize*(pagination.PageNo-1) : endIndex]
+		listOfResult = list[articlesReq.PageSize*(articlesReq.PageNo-1) : endIndex]
 	} else {
 		listOfResult = []string{}
 	}
 
 	var articles models.Articles
-	db := models.DB.Where("article_id in (?)", listOfResult).Find(&articles)
+	var tagId string
+	db := models.DB.Where("article_id in (?)", listOfResult)
+	if articlesReq.TagId != "" {
+		tagId = articlesReq.TagId
+	}
+	if tagId != "" {
+		db.Where("tags like ?", "%"+tagId+"%")
+	}
+	db.Find(&articles)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
@@ -549,13 +564,16 @@ func MyLikeComments(c *gin.Context) {
 }
 
 func MyCollects(c *gin.Context) {
-	pagination := models.Pagination{
-		PageSize: 20,
-		PageNo:   1,
+	articlesReq := UserArticlesReq{
+		Pagination: models.Pagination{
+			PageSize: 20,
+			PageNo:   1,
+		},
 	}
-	err := c.ShouldBindJSON(&pagination)
-	pageNo := pagination.PageNo
-	pageSize := pagination.PageSize
+	err := c.ShouldBindJSON(&articlesReq)
+
+	pageNo := articlesReq.PageNo
+	pageSize := articlesReq.PageSize
 	if err != nil {
 		c.JSON(200, models.Result{Code: 10001, Message: "invalid request"})
 		return
@@ -569,18 +587,28 @@ func MyCollects(c *gin.Context) {
 	}
 
 	var listOfResult []string
-	if len(list) > pagination.PageSize*(pagination.PageNo-1) {
+	if len(list) > articlesReq.PageSize*(articlesReq.PageNo-1) {
 		endIndex := len(list)
-		if len(list) > pagination.PageSize*pagination.PageNo {
-			endIndex = pagination.PageSize * pagination.PageNo
+		if len(list) > articlesReq.PageSize*articlesReq.PageNo {
+			endIndex = articlesReq.PageSize * articlesReq.PageNo
 		}
-		listOfResult = list[pagination.PageSize*(pagination.PageNo-1) : endIndex]
+		listOfResult = list[articlesReq.PageSize*(articlesReq.PageNo-1) : endIndex]
 	} else {
 		listOfResult = []string{}
 	}
 
 	var articles models.Articles
-	db := models.DB.Where("article_id in (?)", listOfResult).Find(&articles)
+	var tagId string
+
+	db := models.DB.Where("article_id in (?)", listOfResult)
+	if articlesReq.TagId != "" {
+		tagId = articlesReq.TagId
+	}
+	if tagId != "" {
+		db.Where("tags like ?", "%"+tagId+"%")
+	}
+
+	db.Find(&articles)
 	if db.Error != nil {
 		// SQL执行失败，返回错误信息
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
