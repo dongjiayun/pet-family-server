@@ -11,8 +11,10 @@ import (
 
 type ArticlesReq struct {
 	models.Pagination
-	Sync bool   `json:"sync"`
-	Cid  string `json:"cid"`
+	Sync    bool     `json:"sync"`
+	Cid     string   `json:"cid"`
+	TagIds  []string `json:"tagIds"`
+	Keyword string   `json:"keyword"`
 }
 
 func GetArticles(c *gin.Context) {
@@ -32,6 +34,14 @@ func GetArticles(c *gin.Context) {
 	var articles models.Articles
 	var cid string
 	var reqCid string
+	var tagIds []string
+	var keyword string
+	if articlesReq.TagIds != nil {
+		tagIds = articlesReq.TagIds
+	}
+	if articlesReq.Keyword != "" {
+		keyword = articlesReq.Keyword
+	}
 	if articlesReq.Cid != "" {
 		reqCid = articlesReq.Cid
 	}
@@ -47,9 +57,24 @@ func GetArticles(c *gin.Context) {
 			cid = checkToken.Cid
 		}
 	}
-	if cid == "C000000000001" {
-		db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).
-			Where("deleted_at IS NULL").Order("id desc").Find(&articles)
+
+	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).
+		Where("deleted_at IS NULL").
+		Order("id desc")
+	if reqCid != "" {
+		db.Where("author_id = ? ", reqCid)
+	}
+	if tagIds != nil {
+		utils.ArrayForeach(&tagIds, func(tagId string) string {
+			db.Where("tags like ?", "%"+tagId+"%")
+			return tagId
+		})
+	}
+	if keyword != "" {
+		db.Where("title like ?", "%"+keyword+"%")
+	}
+	if cid == "C000000000001" { //管理员获取所有文章
+		db.Find(&articles)
 		if db.Error != nil {
 			if db.Error.Error() == "record not found" {
 				c.JSON(200, models.Result{Code: 0, Message: "success"})
@@ -60,14 +85,8 @@ func GetArticles(c *gin.Context) {
 		}
 	} else if cid != "" {
 		cidStr := cid
-		db := models.DB.Limit(pageSize).Offset((pageNo-1)*pageSize).
-			Where("deleted_at IS NULL").
-			Where("is_private = ?", false)
-		if reqCid != "" {
-			db.Where("author_id = ? ", reqCid)
-		}
-		db.Or("author_id = ? and deleted_at IS NULL", cidStr).
-			Order("id desc")
+		db.Where("is_private = ?", false)
+		db.Or("author_id = ? and deleted_at IS NULL", cidStr)
 		db.Find(&articles)
 		if db.Error != nil {
 			if db.Error.Error() == "record not found" {
@@ -78,13 +97,7 @@ func GetArticles(c *gin.Context) {
 			return
 		}
 	} else {
-		db := models.DB.Limit(pageSize).Offset((pageNo-1)*pageSize).
-			Where("deleted_at IS NULL").
-			Where("is_private = ?", false)
-		if reqCid != "" {
-			db.Where("author_id = ? ", reqCid)
-		}
-		db.Order("id desc")
+		db.Where("is_private = ?", false)
 		db.Find(&articles)
 		if db.Error != nil {
 			if db.Error.Error() == "record not found" {

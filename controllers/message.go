@@ -16,7 +16,11 @@ func GetMessage(c *gin.Context) {
 	}
 	c.ShouldBindJSON(&pagination)
 	var Messages []models.Message
-	db := models.DB.Limit(pagination.PageSize).Offset((pagination.PageNo - 1) * pagination.PageSize).Order("id desc").Where("deleted_at IS NULL").Find(&Messages)
+	db := models.DB.
+		Limit(pagination.PageSize).Offset((pagination.PageNo - 1) * pagination.PageSize).
+		Order("id desc").
+		Where("deleted_at IS NULL").
+		Find(&Messages)
 	if db.Error != nil {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return

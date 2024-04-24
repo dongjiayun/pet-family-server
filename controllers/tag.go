@@ -21,7 +21,8 @@ func GetTags(c *gin.Context) {
 	pageNo := pagination.PageNo
 	pageSize := pagination.PageSize
 	var tags []models.Tag
-	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Order("id desc").Where("deleted_at IS NULL").Find(&tags)
+	var count int64
+	db := models.DB.Limit(pageSize).Offset((pageNo - 1) * pageSize).Order("id desc").Where("deleted_at IS NULL").Find(&tags).Count(&count)
 	if db.Error != nil {
 		if db.Error.Error() == "record not found" {
 			c.JSON(200, models.Result{Code: 0, Message: "success"})
@@ -31,7 +32,8 @@ func GetTags(c *gin.Context) {
 		c.JSON(200, models.Result{Code: 10002, Message: "internal server error"})
 		return
 	}
-	list := models.GetListData[models.Tag](tags, pageNo, pageSize, db.RowsAffected)
+
+	list := models.GetListData[models.Tag](tags, pageNo, pageSize, count)
 	c.JSON(200, models.Result{0, "success", list})
 }
 

@@ -47,6 +47,16 @@ func checkUserExtendInfoMiddleware(c *gin.Context) {
 	<-chUE
 }
 
+func checkAdminMiddleware(c *gin.Context) {
+	cid, _ := c.Get("cid")
+	cidString, _ := cid.(string)
+	if cidString != "C000000000001" {
+		c.JSON(403, models.Result{Code: 10001, Message: "you are not admin"})
+		c.Abort()
+		return
+	}
+}
+
 func getAuthApi(router *gin.Engine) {
 	r := router.Group("/auth")
 
@@ -133,6 +143,8 @@ func getTagApi(router *gin.Engine) {
 	r.Use(checkTokenMiddleware)
 
 	r.Use(checkUserExtendInfoMiddleware)
+
+	r.Use(checkAdminMiddleware)
 
 	r.POST("get", controllers.GetTags)
 
