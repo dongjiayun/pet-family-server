@@ -48,7 +48,7 @@ func CreateMessage(c *gin.Context) {
 	var message models.Message
 	message.Content = req.Content
 
-	message.MessageId = uuid.New().String()
+	message.MessageId = "Message-" + uuid.New().String()
 
 	cid, _ := c.Get("cid")
 	if cid != nil {

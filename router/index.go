@@ -219,6 +219,24 @@ func getMessageApi(router *gin.Engine) {
 	r.DELETE("like/:messageId", controllers.UnLikeMessage)
 }
 
+func getResumeApi(router *gin.Engine) {
+	r := router.Group("/resume")
+
+	r.POST("get", controllers.GetResumes)
+
+	r.GET(":resumeId", controllers.GetResume)
+
+	r.Use(checkTokenMiddleware)
+
+	r.Use(checkAdminMiddleware)
+
+	r.POST("", controllers.CreateResume)
+
+	r.PUT("", controllers.UpdateResume)
+
+	r.DELETE(":resumeId", controllers.DeleteResume)
+}
+
 func setCros(router *gin.Engine) {
 	router.Use(CORSMiddleware())
 }
@@ -235,5 +253,6 @@ func GetRouter() *gin.Engine {
 	getNoticeApi(router)
 	getCommonApi(router)
 	getMessageApi(router)
+	getResumeApi(router)
 	return router
 }
