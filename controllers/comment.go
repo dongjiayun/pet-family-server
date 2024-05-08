@@ -115,7 +115,8 @@ func UpdateComment(c *gin.Context) {
 	isSensitive, _ := filter.Validate(requestBody.Content)
 
 	if isSensitive == false {
-		c.JSON(200, models.Result{Code: 10002, Message: "评论存在敏感词😅"})
+		sensitiveWords := filter.FindAll(requestBody.Content)
+		c.JSON(200, models.Result{Code: 10002, Message: "评论存在敏感词😅" + ",敏感词：" + strings.Join(sensitiveWords, ",")})
 		return
 	}
 
@@ -182,7 +183,8 @@ func CreateComment(c *gin.Context) {
 	isSensitive, _ := filter.Validate(comment.Content)
 
 	if isSensitive == false {
-		c.JSON(200, models.Result{Code: 10002, Message: "评论存在敏感词😅"})
+		sensitiveWords := filter.FindAll(comment.Content)
+		c.JSON(200, models.Result{Code: 10002, Message: "评论存在敏感词😅" + ",敏感词：" + strings.Join(sensitiveWords, ",")})
 		return
 	}
 

@@ -6,6 +6,7 @@ import (
 	"github.com/importcjj/sensitive"
 	"go-pet-family/models"
 	"go-pet-family/utils"
+	"strings"
 	"time"
 )
 
@@ -289,13 +290,15 @@ func CreateArticle(c *gin.Context) {
 	isTitleSensitive, _ := filter.Validate(article.Title)
 
 	if isTitleSensitive == false {
-		c.JSON(200, models.Result{Code: 10002, Message: "文章标题存在敏感词😅"})
+		sensitiveWords := filter.FindAll(article.Title)
+		c.JSON(200, models.Result{Code: 10002, Message: "文章标题存在敏感词😅" + ",敏感词：" + strings.Join(sensitiveWords, ",")})
 		return
 	}
 
 	isArticleSensitive, _ := filter.Validate(article.Content)
 	if isArticleSensitive == false {
-		c.JSON(200, models.Result{Code: 10002, Message: "文章内容存在敏感词😅"})
+		sensitiveWords := filter.FindAll(article.Content)
+		c.JSON(200, models.Result{Code: 10002, Message: "文章内容存在敏感词😅" + ",敏感词：" + strings.Join(sensitiveWords, ",")})
 		return
 	}
 
@@ -347,13 +350,15 @@ func UpdateArticle(c *gin.Context) {
 	isTitleSensitive, _ := filter.Validate(requestBody.Title)
 
 	if isTitleSensitive == false {
-		c.JSON(200, models.Result{Code: 10002, Message: "文章标题存在敏感词😅"})
+		sensitiveWords := filter.FindAll(requestBody.Title)
+		c.JSON(200, models.Result{Code: 10002, Message: "文章标题存在敏感词😅" + ",敏感词：" + strings.Join(sensitiveWords, ",")})
 		return
 	}
 
 	isArticleSensitive, _ := filter.Validate(requestBody.Content)
 	if isArticleSensitive == false {
-		c.JSON(200, models.Result{Code: 10002, Message: "文章内容存在敏感词😅"})
+		sensitiveWords := filter.FindAll(requestBody.Title)
+		c.JSON(200, models.Result{Code: 10002, Message: "文章内容存在敏感词😅" + ",敏感词：" + strings.Join(sensitiveWords, ",")})
 		return
 	}
 
