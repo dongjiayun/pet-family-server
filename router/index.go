@@ -1,12 +1,13 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/swaggo/files"
-	"github.com/swaggo/gin-swagger"
 	"go-pet-family/controllers"
 	"go-pet-family/models"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/swaggo/files"
+	"github.com/swaggo/gin-swagger"
 )
 
 func genDoc(router *gin.Engine) {
@@ -200,6 +201,10 @@ func getCommonApi(router *gin.Engine) {
 
 	r.POST("obsToken", controllers.GetObsToken)
 
+	r.POST("uploadPic", controllers.CommonUploadPic)
+
+	r.POST("batchUploadPics", controllers.BatchUploadPics)
+
 	r.Use(checkTokenMiddleware)
 }
 
@@ -237,6 +242,10 @@ func getResumeApi(router *gin.Engine) {
 	r.DELETE(":resumeId", controllers.DeleteResume)
 }
 
+func getLocalOss(router *gin.Engine) {
+	router.Static("/uploads", "./uploads")
+}
+
 func setCros(router *gin.Engine) {
 	router.Use(CORSMiddleware())
 }
@@ -254,5 +263,6 @@ func GetRouter() *gin.Engine {
 	getCommonApi(router)
 	getMessageApi(router)
 	getResumeApi(router)
+	getLocalOss(router)
 	return router
 }
